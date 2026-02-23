@@ -9,7 +9,7 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100 flex justify-between">
                     {{ __("Welcome to the Create a Log Page! ") }}{{ Auth::user()->name }}
-                    <br>Here u can create a Log for Anyone !! 
+                    <br>Here you can create a Log for Anyone !! 
                 </div>
             
 </div>
@@ -19,30 +19,29 @@
     @csrf
     <div class="grid gap-6 mb-6 md:grid-cols-2">
         <div>
-            <label for="user" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">User Id</label>
-            <input type="number" id="user" min="1" value="1"name ="user"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="" required />
+            <label for="user" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">User Name</label>
+            <select id="" name ="user_id" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                   
+                    @foreach($users as $user)
+                    <option value="{{$user->id}}">{{ $user->name }}</option>
+                    @endforeach
+            </select>
         </div>
+      
         <div>
             <label for="date" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Date</label>
-            <input type="date" name ="date" id="date" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
+            <input type="date" name ="data" id="date" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
         </div>
         <div>
             <label for="entry" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Entry</label>
-            <input type="datetime-local" id="entry" name ="entry" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
+            <input type="time" id="entrada" name ="entrada" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
         </div>  
-        <div>
-            <label for="lunch" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Lunch End</label>
-            <input type="datetime-local" id="lunch" name="lunch" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
-        </div>
+       
         <div>
             <label for="left" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Left At</label>
-            <input type="datetime-local" id="left" name = "left" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
+            <input type="time" id="left" name = "saida" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
         </div>
         
-        <div>
-            <label for="total" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Total Hours</label>
-            <input type="number" min="1" max ="8" id="total" name = "total" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder = '"8 Hours"' required />
-        </div>
         <div>
             <label for="obs" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Obs</label>
             <input type="text" id="obs" name ="obs"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="" required />
@@ -55,6 +54,9 @@
         </div>
         <label for="remember" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">I agree with the <a href="#" class="text-blue-600 hover:underline dark:text-blue-500">terms and conditions</a>.</label>
     </div>
+      <div class="invisible">
+            <input type="hidden" value="{{ $user->inicio_almoco }}" name="inicio">
+        </div>
     <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
 </form>
 

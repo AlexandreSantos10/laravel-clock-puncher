@@ -6,7 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class logs extends Model
 {
+ public function Users(){
+   // return $this->belongsTo('App\Models\User'); 
+    return $this->belongsTo(User::class, 'foreign_key', 'user_id');
+}
+
+
     protected $table = 'logs';
+
 
     protected $fillable = [
         'id',

@@ -18,16 +18,23 @@
                         <thead class="text-sm text-body bg-neutral-secondary-soft border-b rounded-base border-default">
                             <tr>
                                 <th scope="col" class="px-6 py-3 font-medium text-gray-100">
-                                    User ID
+                                    User 
+                                </th>
+                                <th scope="col" class="px-6 py-3 font-medium text-gray-100">
+                                    Date
                                 </th>
                                 <th scope="col" class="px-6 py-3 font-medium text-gray-100">
                                     Entry
                                 </th>
                                 <th scope="col" class="px-6 py-3 font-medium text-gray-100">
-                                    Exit
+                                    Lunch Start
                                 </th>
+
                                 <th scope="col" class="px-6 py-3 font-medium text-gray-100">
                                     Lunch End
+                                </th>
+                                <th scope="col" class="px-6 py-3 font-medium text-gray-100">
+                                    Exit
                                 </th>
                                 <th scope="col" class="px-6 py-3 font-medium text-gray-100">
                                     Total Time
@@ -37,23 +44,33 @@
                                 </th>
                             </tr>
                         </thead>
+                        
                         <tbody>
                             @foreach($logs as $log)
                             <tr class="bg-neutral-primary border-b border-default">
                                 <th scope="row" class="px-6 py-4 font-medium text-heading whitespace-nowrap text-gray-100">
-                                    {{ $log->user_id }}
+                                    {{ $log->name }}
                                 </th>
                                 <td class="px-6 py-4 text-gray-100">
-                                    {{ $log->entrada }}
+                                    {{ $log->data }}
                                 </td>
                                 <td class="px-6 py-4 text-gray-100">
-                                    {{ $log->saida }}
+                                    {{ 
+                                        $print_time = date("H:i", strtotime($log->entrada))
+                                    }}
                                 </td>
                                 <td class="px-6 py-4 text-gray-100">
-                                    {{ $log->final_almoço }}
+                                    {{$print_time = date("H:i", strtotime($log->inicio_almoco)) }}
                                 </td>
                                 <td class="px-6 py-4 text-gray-100">
-                                    {{ $log->total_horas}}
+                                    {{$print_time = date("H:i", strtotime($log->final_almoço)) }}
+                                </td>
+                                <td class="px-6 py-4 text-gray-100">
+                                    {{ $print_time = date("H:i", strtotime($log->saida)) }}
+                                </td>
+                                
+                                <td class="px-6 py-4 text-gray-100">
+                                    {{$print_time = date("H:i", strtotime($log->total_horas))}}
                                 </td>
                                 <td class="px-6 py-4 text-gray-100">
                                     <a href ="/editlog/{{$log->id}}"type="button" class="text-white bg-gradient-to-r from-green-400 via-green-500 to-green-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-green-300 dark:focus:ring-green-800 font-medium rounded-base text-sm px-4 py-1.5 text-center leading-5">Edit</a>

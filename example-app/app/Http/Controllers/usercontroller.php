@@ -18,10 +18,19 @@ class usercontroller extends Controller
         $users = User::all();
         return view('userlist', compact('users'));
     }
+
+    public function indexa()
+    {
+        $users = User::all();
+        return view('createpost', compact('users'));
+    }
+
     public function create()
     {
         return view("createuser");
     }
+
+     
 
     public function usercreate(Request $request): RedirectResponse
     {

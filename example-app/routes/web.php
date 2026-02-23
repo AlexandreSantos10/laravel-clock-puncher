@@ -25,10 +25,15 @@ route::get('/dashboard', [logscontroller::class, 'index'])->name('dashboard');
 route::get('/createpost',[logscontroller::class, 'create'])->name('createpost');
 route::get('/createuser',[usercontroller::class, 'create'])->name('createuser');
 
+route::get('/createpost',[usercontroller::class, 'indexa'])->name('getusers');
 
 Route::post('usercreate', [usercontroller::class, 'usercreate'])->name('usercreate');
 
 Route::post('postcreate', [logscontroller::class, 'postcreate'])->name('postcreate');
 
 Route::get('/editlog/{logs}', [logscontroller::class, 'editlog']);
+
+
+Route::put('/editlog/{logs}/update', [logscontroller::class, 'update'])->name('update');
+
 require __DIR__.'/auth.php';
