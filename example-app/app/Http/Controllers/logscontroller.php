@@ -48,8 +48,29 @@ class logscontroller extends Controller
     }
     public function homepage(Request $request)
     {
-
-        return view("home");
+        $id = Auth::user()->id;
+        $user = User::findOrFail($id);
+        $data = Carbon::now()->format('Y-m-d');
+        $logs = Logs::all();
+        $aux = 0;
+        foreach($logs as $log)
+        {
+            if($log->data==$data)
+                {
+                    if($log->user_id==$id)
+                        {
+                            $aux=1;
+                            if($log->saida == "00:00")
+                            return view("clockfinish",['logs' => $log]);
+                            else 
+                            return view("clockfinished",['logs' => $log]);
+                        }
+                }
+        }
+        if($aux==0)
+            {
+                return view("home");
+            }
     }
     public function logcreate(Request $request)
     {
@@ -82,6 +103,7 @@ class logscontroller extends Controller
     
     public function logup(Logs $logs)
     {
+        
         return view("clockfinish", compact('logs'));
     }
     public function logupdate(Logs $logs)

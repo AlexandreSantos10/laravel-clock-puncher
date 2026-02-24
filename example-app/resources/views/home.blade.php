@@ -1,11 +1,10 @@
 <x-app-layout>
     
-    
-    
+<div class="bg-gray-800">
 <div class="py-50">
         <div class="max-w-md mx-auto sm:px-4 lg:px-12 ">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-<div class="max-w p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 text-center ">
+<div class="max-w p-6 bg-white border border-white rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 text-center ">
     <a href="#">
         <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Welcome to the Clock Puncher</h5>
     </a>
@@ -20,6 +19,7 @@
     
 </div>
 </div>
-    
+    </div>
+    </div>
 </x-app-layout>
 
