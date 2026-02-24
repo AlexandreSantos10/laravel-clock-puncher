@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use \App\Http\Controllers\usercontroller;
 use \App\Http\Controllers\logscontroller;
+use Illuminate\Support\Facades\Auth;
 Route::get('/', function () {
     return view('welcome');
 });
@@ -19,6 +20,12 @@ Route::middleware('auth')->group(function () {
 });
 
 
+route::get('/home', [logscontroller::class, 'homepage'])->name('home');
+route::post('/home/create', [logscontroller::class, 'logcreate'])->name('logcreate');
+route::get('/clockfinish/{logs}', [logscontroller::class, 'logup'])->name('clockfinish');
+route::put('clockfinishupdate/{logs}', [logscontroller::class, 'logupdate'])->name('clockfinishupdate');
+
+route::get('/mylogs', [logscontroller::class, 'indexuser'])->name('mylogs');
 route::get('/userlist', [usercontroller::class, 'index'])->name('userlist');
 route::get('/dashboard', [logscontroller::class, 'index'])->name('dashboard');
 
@@ -33,7 +40,8 @@ Route::post('postcreate', [logscontroller::class, 'postcreate'])->name('postcrea
 
 Route::get('/editlog/{logs}', [logscontroller::class, 'editlog']);
 
-
 Route::put('/editlog/{logs}/update', [logscontroller::class, 'update'])->name('update');
+
+Route::DELETE('/delete/{logs}', [logscontroller::class, 'delete'])->name('delete');
 
 require __DIR__.'/auth.php';

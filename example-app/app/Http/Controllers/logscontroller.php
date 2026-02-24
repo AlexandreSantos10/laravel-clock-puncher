@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use App\Http\Controllers\usercontroller;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 class logscontroller extends Controller
 {
     public function index()
@@ -24,9 +25,85 @@ class logscontroller extends Controller
         
         return view('dashboard', compact('logs'));
     }
+
+    public function indexuser()
+    {
+  
+       // $logs = Logs::with('Users')->get();
+        $id = Auth::user()->id;
+        $logs = DB::table("users")
+        ->join("logs","user_id","=","users.id")
+        ->where("logs.user_id",$id)
+        ->orderBy('data', 'DESC')
+        ->get()
+        ->toArray();
+        
+        return view('mylogs', compact('logs'));
+    }
+
+
     public function create()
     {
         return view("createpost");
+    }
+    public function homepage(Request $request)
+    {
+
+        return view("home");
+    }
+    public function logcreate(Request $request)
+    {
+
+    $id = Auth::user()->id;
+    $user = User::findOrFail($id);
+    $data = Carbon::now()->format('Y/m/d');
+    $entrada=Carbon::now()->format('H:i');
+    $endlunch = Carbon::parse($user->inicio_almoco);
+    $aux = $endlunch -> hour;
+    $aux = $aux + 1;
+    $endlunch -> hour = $aux;
+
+
+       $logs = Logs::create([
+            'user_id' => $id,
+            'data' => $data,
+            'entrada' => $entrada,
+            'final_almoço' => $endlunch,
+            'saida'=>"00:00",
+            "total_horas"=>"00:00",
+            "obs"=>"",
+            "created_by"=>"",
+            "updated_by"=>"",
+        ]);
+        $id = $logs->id;
+        
+       return redirect(route('clockfinish' ,['logs' => $logs]));
+    }
+    
+    public function logup(Logs $logs)
+    {
+        return view("clockfinish", compact('logs'));
+    }
+    public function logupdate(Logs $logs)
+    {
+
+    $entrada = Carbon::parse($logs->entrada);
+    $saida=Carbon::now()->format('H:i');
+    $sai = Carbon::parse($saida);
+    $total = $entrada->diff($sai)->format('%H:%i');
+    
+
+       $data =([
+            'saida'=>$saida,         
+            "total_horas"=>$total,
+            "obs"=>"",
+            "created_by"=>"",
+            "updated_by"=>"",
+        ]);
+        
+
+        $logs->update($data);
+        return redirect(route('dashboard'));
     }
 
     public function postcreate(Request $request)
@@ -53,7 +130,7 @@ class logscontroller extends Controller
         $aux = $aux - 1;
         $exit -> hour = $aux;
         $total = $entry->diff($exit)->format('%H:%i');
-   
+        $adm = Auth::user()->name;
         $logs = Logs::create([
             'user_id' => $request->user_id,
             'data' => $request->data,
@@ -62,7 +139,7 @@ class logscontroller extends Controller
             'saida' => $request->saida,
             'total_horas' => $total,
             'obs' => $request->obs,
-            'created_by' => "Alexandre Santos",
+            'created_by' => $adm,
             'updated_by' => "0",
         ]);
         
@@ -96,13 +173,22 @@ class logscontroller extends Controller
         $aux = $exit -> hour;
         $aux = $aux - 1;
         $exit -> hour = $aux;
+        $adm = Auth::user()->name;
         $total = $entry->diff($exit)->format('%H:%i');
         $data = $data + ([
             'total_horas' => $total,
             'final_almoço' => $endlunch,
+            'updated_by' => $adm,
         ]);
         $logs->update($data);
         return redirect(route('dashboard'));
     
     }
+    
+     public function delete(Logs $logs)
+    {
+        $logs->DELETE();
+        return redirect()->route("dashboard")->with("message","The log has been sucessfully removed");
+    }
+
 }

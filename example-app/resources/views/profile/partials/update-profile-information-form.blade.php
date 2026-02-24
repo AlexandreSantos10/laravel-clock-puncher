@@ -1,12 +1,22 @@
 <section>
-    <header>
+    <header style="    
+    display: flex;
+    align-items: center;
+    justify-content: space-between;">
         <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
             {{ __('Profile Information') }}
         </h2>
 
-        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            {{ __("Update your account's profile information and email address.") }}
-        </p>
+       
+        
+<form class="py-3" method="POST" action="{{ route('logout') }}">
+@csrf
+
+<x-danger-button type="submit">Log Out</x-danger-button>
+
+    
+
+</form>
     </header>
 
     <form id="send-verification" method="post" action="{{ route('verification.send') }}">
@@ -19,13 +29,13 @@
 
         <div>
             <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
+            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full p-3" :value="old('name', $user->name)" required autofocus autocomplete="name" />
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
 
         <div>
             <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
+            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full p-3" :value="old('email', $user->email)" required autocomplete="username" />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
@@ -49,7 +59,7 @@
 
         <div>
             <x-input-label for="inicio_almoco" :value="__('Lunch')" />
-            <x-text-input id="inicio_almoco" name="inicio_almoco" type="time" class="mt-1 block w-full" :value="old('inicio_almoco', $user->inicio_almoco)" required autofocus autocomplete="lunch" />
+            <x-text-input id="inicio_almoco" name="inicio_almoco" type="time" class="mt-1 block w-full p-3" :value="old('inicio_almoco', $user->inicio_almoco)" required autofocus autocomplete="lunch" />
             <x-input-error class="mt-2" :messages="$errors->get('inicio_almoco')" />
         </div>
 
