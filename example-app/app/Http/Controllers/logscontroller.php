@@ -59,6 +59,7 @@ class logscontroller extends Controller
                 {
                     if($log->user_id==$id)
                         {
+                            
                             $aux=1;
                             if($log->saida == "00:00")
                             return view("clockfinish",['logs' => $log]);
@@ -125,7 +126,7 @@ class logscontroller extends Controller
         
 
         $logs->update($data);
-        return redirect(route('dashboard'));
+        return view("clockfinished",['logs' => $logs]);
     }
 
     public function postcreate(Request $request)
