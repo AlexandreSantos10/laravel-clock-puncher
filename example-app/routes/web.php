@@ -39,6 +39,7 @@ Route::post('usercreate', [usercontroller::class, 'usercreate'])->name('usercrea
 Route::post('postcreate', [logscontroller::class, 'postcreate'])->name('postcreate');
 
 Route::get('/editlog/{logs}', [logscontroller::class, 'editlog']);
+Route::get('/look/{logs}', [logscontroller::class, 'look']);
 
 Route::put('/editlog/{logs}/update', [logscontroller::class, 'update'])->name('update');
 

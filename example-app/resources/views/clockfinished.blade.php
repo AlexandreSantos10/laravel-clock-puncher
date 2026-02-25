@@ -1,7 +1,7 @@
 <x-app-layout>
     
     
-<div class="bg-gray-800">
+<div class="bg-gray-800 min-h-screen">
 <div class="py-55">
         <div class="max-w-md mx-auto sm:px-4 lg:px-12">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">

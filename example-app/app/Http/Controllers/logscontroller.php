@@ -8,6 +8,7 @@ use \App\Models\logs;
 use \App\Models\user;
 use Illuminate\Http\RedirectResponse;
 use App\Http\Controllers\usercontroller;
+use Mehradsadeghi\FilterQueryString\FilterQueryString;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -20,12 +21,18 @@ class logscontroller extends Controller
         $logs = DB::table("users")
         ->join("logs","user_id","=","users.id")
         ->orderBy('data', 'DESC')
+        //->where("name","like","%" . $request->name - "%")
         ->get()
         ->toArray();
-        
         return view('dashboard', compact('logs'));
     }
 
+    public function look(Logs $logs){
+    $id= $logs->id;
+    $logs = Logs::findOrFail($id);
+   
+        return view("look",["logs"=>$logs]);
+    }
     public function indexuser()
     {
   
@@ -49,7 +56,7 @@ class logscontroller extends Controller
     public function homepage(Request $request)
     {
         $id = Auth::user()->id;
-        $user = User::findOrFail($id);
+        $users = User::findOrFail($id);
         $data = Carbon::now()->format('Y-m-d');
         $logs = Logs::all();
         $aux = 0;
@@ -61,8 +68,10 @@ class logscontroller extends Controller
                         {
                             
                             $aux=1;
-                            if($log->saida == "00:00")
-                            return view("clockfinish",['logs' => $log]);
+                            
+                            if($log->saida == "00:00:00"){
+                            return view("clockfinish",['logs' => $log],['users' => $users]);
+                            }
                             else 
                             return view("clockfinished",['logs' => $log]);
                         }
@@ -94,12 +103,12 @@ class logscontroller extends Controller
             'saida'=>"00:00",
             "total_horas"=>"00:00",
             "obs"=>"",
-            "created_by"=>"",
+            "created_by"=>$user->name,
             "updated_by"=>"",
         ]);
         $id = $logs->id;
         
-       return redirect(route('clockfinish' ,['logs' => $logs]));
+       return redirect(route('clockfinish' ,['logs' => $logs],['users' => $user]));
     }
     
     public function logup(Logs $logs)
@@ -109,7 +118,7 @@ class logscontroller extends Controller
     }
     public function logupdate(Logs $logs)
     {
-
+    
     $entrada = Carbon::parse($logs->entrada);
     $saida=Carbon::now()->format('H:i');
     $sai = Carbon::parse($saida);
@@ -193,11 +202,17 @@ class logscontroller extends Controller
         $endlunch -> hour = $aux;
         $entry = Carbon::parse($data["entrada"]);
         $exit = Carbon::parse($data["saida"]);
+        $adm = Auth::user()->name;
+        $exitstr = $exit->format("H:i");
+        if($exitstr != "00:00"){
         $aux = $exit -> hour;
         $aux = $aux - 1;
         $exit -> hour = $aux;
-        $adm = Auth::user()->name;
+
         $total = $entry->diff($exit)->format('%H:%i');
+        }
+        else
+        $total="00:00:00";
         $data = $data + ([
             'total_horas' => $total,
             'final_almoço' => $endlunch,

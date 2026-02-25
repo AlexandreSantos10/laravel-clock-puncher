@@ -1,7 +1,7 @@
 <x-app-layout>
     
     
-<div class="bg-gray-800">
+<div class="bg-gray-800 min-h-screen">
 <div class="py-50">
         <div class="max-w-md mx-auto sm:px-4 lg:px-12">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
@@ -10,8 +10,9 @@
         <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Your Day has started!</h5>
     </a>
     <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">You started at: {{ $logs->entrada }}</p>
-    <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">Lunch is going to end around: {{ $logs->final_almoço }}</p>
+    
     <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">You can click here to finish your day.</p>
+    
     
     
     <form action="{{route('clockfinishupdate',['logs' => $logs])}}" method="post">

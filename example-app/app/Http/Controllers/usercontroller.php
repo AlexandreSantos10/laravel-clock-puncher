@@ -39,7 +39,7 @@ class usercontroller extends Controller
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', Rules\Password::defaults()],
             'type' => ['required', 'string', 'max:255'],
-            'lunch' => ['required', 'integer', 'max:255'],
+            'lunch' => ['required', 'max:255'],
 
         ]);
 
@@ -48,7 +48,7 @@ class usercontroller extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'tipo' => $request->type,
-            'inicio_almoço' => $request->lunch,
+            'inicio_almoco' => $request->lunch,
 
         ]);
 
