@@ -9,14 +9,21 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules;
 
 class usercontroller extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        if($request->name == "")
         $users = User::all();
-        return view('userlist', compact('users'));
+        else 
+            {
+                $users = User::where("name", "LIKE", "$request->name%")->get();
+                
+            }
+       return view('userlist', compact('users'));
     }
 
     public function indexa()

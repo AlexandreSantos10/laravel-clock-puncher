@@ -26,8 +26,12 @@ route::get('/clockfinish/{logs}', [logscontroller::class, 'logup'])->name('clock
 route::put('clockfinishupdate/{logs}', [logscontroller::class, 'logupdate'])->name('clockfinishupdate');
 
 route::get('/mylogs', [logscontroller::class, 'indexuser'])->name('mylogs');
+
+
 route::get('/userlist', [usercontroller::class, 'index'])->name('userlist');
 route::get('/dashboard', [logscontroller::class, 'index'])->name('dashboard');
+
+route::get('/search', [usercontroller::class, 'search'])->name('search');
 
 route::get('/createpost',[logscontroller::class, 'create'])->name('createpost');
 route::get('/createuser',[usercontroller::class, 'create'])->name('createuser');

@@ -16,14 +16,7 @@ class logscontroller extends Controller
 {
     public function index()
     {
-  
-       // $logs = Logs::with('Users')->get();
-        $logs = DB::table("users")
-        ->join("logs","user_id","=","users.id")
-        ->orderBy('data', 'DESC')
-        //->where("name","like","%" . $request->name - "%")
-        ->get()
-        ->toArray();
+        $logs = Logs::with('User')->orderBy('data', 'DESC')->get();
         return view('dashboard', compact('logs'));
     }
 
@@ -36,14 +29,8 @@ class logscontroller extends Controller
     public function indexuser()
     {
   
-       // $logs = Logs::with('Users')->get();
         $id = Auth::user()->id;
-        $logs = DB::table("users")
-        ->join("logs","user_id","=","users.id")
-        ->where("logs.user_id",$id)
-        ->orderBy('data', 'DESC')
-        ->get()
-        ->toArray();
+        $logs = Logs::with('User')->where('user_id',$id)->get();
         
         return view('mylogs', compact('logs'));
     }

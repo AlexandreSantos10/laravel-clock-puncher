@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class logs extends Model
 {
  
- public function Users(){
+ public function User(){
    
-    return $this->belongsTo(User::class, 'foreign_key', 'user_id');
+    return $this->belongsTo(User::class);
 }
 
 

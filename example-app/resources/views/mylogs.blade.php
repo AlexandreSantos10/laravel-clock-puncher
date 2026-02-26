@@ -44,7 +44,7 @@
                             @foreach($logs as $log)
                             <tr class="bg-neutral-primary border-b border-default">
                                 <th scope="row" class="px-6 py-4 font-medium text-heading whitespace-nowrap text-gray-100">
-                                    {{ $log->name }}
+                                    {{ $log->user->name }}
                                 </th>
                                 <td class="px-6 py-4 text-gray-100">
                                     {{ $log->data }}
@@ -55,7 +55,7 @@
                                     }}
                                 </td>
                                 <td class="px-6 py-4 text-gray-100">
-                                    {{$print_time = date("H:i", strtotime($log->inicio_almoco)) }}
+                                    {{$print_time = date("H:i", strtotime($log->user->inicio_almoco)) }}
                                 </td>
                                 <td class="px-6 py-4 text-gray-100">
                                     {{$print_time = date("H:i", strtotime($log->final_almoço)) }}
