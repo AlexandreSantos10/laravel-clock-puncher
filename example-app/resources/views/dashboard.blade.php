@@ -11,15 +11,19 @@
                 <div class="w-full p-6 text-gray-900 dark:text-gray-100 flex justify-between sm:flex flex-wrap">
                 
                     <div>
-                    <form action="" method="get">
+                    <form action="/dashboard" method="get">
                         <div class="flex justify-between sm:flex flex-wrap">
                             
                             <label for="table-search" class="sr-only">Search</label>
                             
                                 <div>
                                     <div class="">
-                                    
-                                        <input type="text" id="table-search" name="name" class="block p-2.5 ps-10 text-sm text-gray-900 border border-gray-300 w-50 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Search name">
+                                    <select id="" name ="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                    <option value="">All Users</option>
+                                    @foreach($users as $user)
+                                    <option value="{{$user->name}}">{{ $user->name }}</option>
+                                    @endforeach
+                                    </select> 
                                     </div>
                                 </div>
                                 <div class ="ml-2">
@@ -28,11 +32,16 @@
                                     <option value="today">Today</option>
                                     <option value="week">Last Week</option>
                                     <option value="month">Last Month</option>
-                                    <option value="year">Last Year</option>
                                     </select>
                                 </div>
+                                <div class ="ml-2">
+                                    <input type="date" id="" name ="time" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" />
+                                </div>  
+
+                                <div class="lg:pl-2">
                                 <button type="submit" style="cursor: pointer" class="text-yellow-400 hover:text-white border border-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-#ebab13-300 dark:text-yellow-300 dark:hover:text-white dark:hover:bg-yellow-400 dark:focus:ring-yellow-900">SEARCH 
                                 </button>
+                                </div>
                                 <div class="py-2">
                                     <a href="dashboard">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -40,9 +49,13 @@
                                         </svg>
                                     </a>
                                 </div>
+                                
+
                             </form>
+                            
                         </div>
-                        
+  
+
                     </div>
                     
                     <div>
