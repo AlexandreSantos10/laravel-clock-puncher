@@ -18,15 +18,13 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+route::get('/mylogs', [logscontroller::class, 'indexuser'])->name('mylogs');
 
 
 route::get('/home', [logscontroller::class, 'homepage'])->name('home');
 route::post('/home/create', [logscontroller::class, 'logcreate'])->name('logcreate');
 route::get('/clockfinish/{logs}', [logscontroller::class, 'logup'])->name('clockfinish');
 route::put('clockfinishupdate/{logs}', [logscontroller::class, 'logupdate'])->name('clockfinishupdate');
-
-route::get('/mylogs', [logscontroller::class, 'indexuser'])->name('mylogs');
-
 
 route::get('/userlist', [usercontroller::class, 'index'])->name('userlist');
 route::get('/dashboard', [logscontroller::class, 'index'])->name('dashboard');

@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use \App\Models\User;
@@ -16,14 +15,12 @@ class usercontroller extends Controller
 {
     public function index(Request $request)
     {
-        if($request->name == "")
-        $users = User::all();
-        else 
-            {
-                $users = User::where("name", "LIKE", "$request->name%")->get();
-                
-            }
-       return view('userlist', compact('users'));
+        if ($request->name == "")
+            $users = User::all();
+        else {
+            $users = User::where("name", "LIKE", "$request->name%")->get();
+        }
+        return view('userlist', compact('users'));
     }
 
     public function indexa()
@@ -37,13 +34,13 @@ class usercontroller extends Controller
         return view("createuser");
     }
 
-     
+
 
     public function usercreate(Request $request): RedirectResponse
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', Rules\Password::defaults()],
             'type' => ['required', 'string', 'max:255'],
             'lunch' => ['required', 'max:255'],
@@ -59,7 +56,8 @@ class usercontroller extends Controller
 
         ]);
 
-        
+
         return redirect(route('userlist', absolute: false));
     }
+   
 }
