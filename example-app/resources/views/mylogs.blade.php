@@ -74,7 +74,7 @@
                             @endforeach
                         </tbody>
                     </table>
-
+{{ $logs->links('pagination::tailwind') }}
                 </div>
 
 

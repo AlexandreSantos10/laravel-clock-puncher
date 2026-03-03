@@ -15,7 +15,7 @@
                             <form action="userlist" method="get">
                                 @csrf
                                 <input type="text" name = "name" id="table-search"
-                                    class="block p-2.5 ps-10 text-sm text-gray-900 border border-gray-300 w-50 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                    class="block p-2.5 ps-10 text-sm text-gray-900 border border-gray-300 w-50 bg-gray-50 focus:ring-yellow-500 focus:bordeg-yellow-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-500 dark:focus:bordeg-yellow-500"
                                     placeholder="Search name">
                         </div>
                         <div class="pl-3">
@@ -35,13 +35,13 @@
                         </div>
 
                     </div>
-                    <form>
+                    <form action="{{ route('exportusers') }}" method="get">
                         <div class="ml-100 w-max flex space-between">
 
                             <div>
-                                <select id="" name ="name"
+                                <select id="" name ="format"
                                     class="bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:ring-yellow-400 focus:border-yellow-400 block w-25 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-400 dark:focus:border-yellow-400">
-                                    <option value="">EXPORT</option>
+                                    <option value="xlsx">EXPORT</option>
                                     <option value="xlsx">XLSX</option>
                                     <option value="csv">CSV</option>
 

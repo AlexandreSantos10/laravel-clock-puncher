@@ -4,6 +4,8 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use \App\Http\Controllers\usercontroller;
 use \App\Http\Controllers\logscontroller;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Support\Facades\Auth;
 Route::get('/', function () {
     return view('welcome');
@@ -44,5 +46,22 @@ Route::get('/look/{logs}', [logscontroller::class, 'look']);
 Route::put('/editlog/{logs}/update', [logscontroller::class, 'update'])->name('update');
 
 Route::DELETE('/delete/{logs}', [logscontroller::class, 'delete'])->name('delete');
+
+Route::get('/export', [logscontroller::class, 'export'])->name('export');
+Route::get('/export/users', [usercontroller::class, 'exportusers'])->name('exportusers');
+Route::get('excel',function(){
+    $spreadsheet = new Spreadsheet();
+    $activeWorksheet = $spreadsheet->getActiveSheet();
+    $activeWorksheet->setCellValue('A1', 'Hello World !');
+
+    $writer = new Xlsx($spreadsheet);
+    $writer->save('hello world.xlsx');
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment;filename="myfile.xlsx"');
+    header('Cache-Control: max-age=0');
+
+    $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+    $writer->save('php://output');
+});
 
 require __DIR__.'/auth.php';

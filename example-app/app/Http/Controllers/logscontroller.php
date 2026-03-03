@@ -6,12 +6,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use \App\Models\logs;
 use \App\Models\user;
-use Illuminate\Http\RedirectResponse;
-use App\Http\Controllers\usercontroller;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+
 class logscontroller extends Controller
 {
     public function index(Request $request)
@@ -25,7 +25,7 @@ class logscontroller extends Controller
         }
         if ($request->month != "") {
             $date = $request->month;
-            $logs->where('data','like' , "$date%");
+            $logs->where('data', 'like', "$date%");
         }
         if ($request->time != "") {
             $date = $request->time;
@@ -48,7 +48,7 @@ class logscontroller extends Controller
     {
 
         $id = Auth::user()->id;
-        $logs = Logs::with('User')->where('user_id', $id)->orderBy('data', 'DESC')->get();
+        $logs = Logs::with('User')->where('user_id', $id)->orderBy('data', 'DESC')->paginate(3);;
 
         return view('mylogs', compact('logs'));
     }
@@ -262,5 +262,71 @@ class logscontroller extends Controller
     {
         $logs->DELETE();
         return redirect()->route("dashboard")->with("message", "The log has been sucessfully removed");
+    }
+
+    public function export(Request $request)
+    {
+        $logs = Logs::with('User');
+
+        if ($request->name != "") {
+            $logs->whereHas('user', function ($query) use ($request) {
+                $query->where('name', $request->name);
+            });
+        }
+        if ($request->month != "") {
+            $logs->where('data', 'like', $request->month . '%');
+        }
+        if ($request->time != "") {
+            $logs->whereDay('data', $request->time);
+        }
+        $logs = $logs->orderBy('data', 'DESC')->get();
+        $format = $request->format;
+
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'ID');
+        $sheet->setCellValue('B1', 'User');
+        $sheet->setCellValue('C1', 'Date');
+        $sheet->setCellValue('D1', 'Entry');
+        $sheet->setCellValue('E1', 'Exit');
+        $sheet->setCellValue('F1', 'Total Hours');
+        $sheet->setCellValue('G1', 'Obs');
+
+        $row = 2;
+        foreach ($logs as $log) {
+            $sheet->setCellValue('A' . $row, $log->id);
+            $sheet->setCellValue('B' . $row, $log->user->name);
+            $sheet->setCellValue('C' . $row, $log->data);
+            $sheet->setCellValue('D' . $row, $log->entrada);
+            $sheet->setCellValue('E' . $row, $log->saida);
+            $sheet->setCellValue('F' . $row, $log->total_horas);
+            $sheet->setCellValue('G' . $row, $log->obs);
+            $row++;
+        }
+        if ($format == 'xlsx') {
+            $writer = new Xlsx($spreadsheet);
+
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="logs.xlsx"');
+            header('Cache-Control: max-age=0');
+        }
+        if ($format == 'csv') {
+
+
+
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Csv($spreadsheet);
+
+            $writer->setDelimiter(';');
+            $writer->setEnclosure('"');
+            $writer->setLineEnding("\r\n");
+
+
+            header('Content-Type: text/csv; charset=UTF-8');
+            header('Content-Disposition: attachment; filename="Users.csv"');
+            header('Cache-Control: max-age=0');
+        }
+        $writer->save('php://output');
+        exit;
     }
 }

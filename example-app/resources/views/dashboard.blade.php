@@ -66,13 +66,13 @@
 
 
                 </div>
-                <form>
+                <form action="{{ route('export') }}" method="get">
                     <div class="ml-100 w-max flex space-between">
 
                         <div>
-                            <select id="" name ="name"
+                            <select id="" name ="format"
                                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:ring-yellow-400 focus:border-yellow-400 block w-25 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-400 dark:focus:border-yellow-400">
-                                <option value="">EXPORT</option>
+                                <option value="xlsx">EXPORT</option>
                                 <option value="xlsx">XLSX</option>
                                 <option value="csv">CSV</option>
 
@@ -224,13 +224,13 @@
                                                     <form action ="/delete/{{ $log->id }}" method="post">
                                                         @csrf
                                                         @method('delete')
-                                                        <button type="submit" command="close" commandfor="dialog"
-                                                            class="inline-flex w-full justify-center rounded-md bg-red-500 px-3 py-2 text-sm font-semibold text-white hover:bg-red-400 sm:ml-3 sm:w-auto">Delete</button>
+                                                        <button type="submit" style="cursor: pointer" command="close" commandfor="dialog"
+                                                            class="inline-flex w-full justify-center bg-red-500 px-3 py-2 text-sm font-semibold text-white hover:bg-red-400 sm:ml-3 sm:w-auto">Delete</button>
 
 
                                                     </form>
-                                                    <button type="button" command="close" commandfor="dialog"
-                                                        class="mt-3 inline-flex w-full justify-center rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white ring-1 ring-inset ring-white/5 hover:bg-white/20 sm:mt-0 sm:w-auto">Cancel</button>
+                                                    <button type="button" style="cursor: pointer" command="close" commandfor="dialog"
+                                                        class="mt-3 inline-flex w-full justify-center bg-white/10 px-3 py-2 text-sm font-semibold text-white ring-1 ring-inset ring-white/5 hover:bg-white/20 sm:mt-0 sm:w-auto">Cancel</button>
 
                                                 </div>
                                             </el-dialog-panel>
