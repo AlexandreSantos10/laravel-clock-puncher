@@ -9,11 +9,12 @@
 
             </div>
 
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg place-items-center">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm place-items-center">
 
                 <div class="w-full p-6 text-gray-900 dark:text-gray-100 flex justify-between sm:flex flex-wrap">
 
                     <div>
+                    
                         <form action="/dashboard" method="get">
                             @csrf
                             <div class="flex justify-between sm:flex flex-wrap">
@@ -26,20 +27,20 @@
                                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:ring-yellow-400 focus:border-yellow-400 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-400 dark:focus:border-yellow-400">
                                             <option value="">ALL USERS</option>
                                             @foreach ($users as $user)
-                                                <option value="{{ $user->name }}">{{ $user->name }}</option>
+                                                <option value="{{ $user->name }}"{{ request('name') == $user->name ? 'selected' : '' }}>{{ $user->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                 </div>
                                 <div class ="ml-2">
-                                    <input type="month" id="" name ="month"
+                                    <input type="month" id="" name ="month" value="{{ request('month') }}"
                                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm  focus:ring-yellow-400 focus:border-yellow-400 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-400 dark:focus:border-yellow-400" />
 
                                 </div>
                                 <div class ="ml-2">
 
                                     <input type="number" min="1" max="30" name ="time"
-                                        placeholder="PICK DAY"
+                                        placeholder="PICK DAY" value="{{ request('time') }}"
                                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm  focus:ring-yellow-400 focus:border-yellow-400 block w-25 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-white dark:text-white dark:focus:yellow-400 dark:focus:border-yellow-400" />
                                 </div>
 
@@ -67,6 +68,10 @@
 
                 </div>
                 <form action="{{ route('export') }}" method="get">
+                <input type="hidden" name ="name" value="{{ request('name')}}">
+                <input type="hidden" name ="month" value="{{ request('month')}}">
+                <input type="hidden" name ="time" value="{{ request('time')}}">
+                @csrf
                     <div class="ml-100 w-max flex space-between">
 
                         <div>

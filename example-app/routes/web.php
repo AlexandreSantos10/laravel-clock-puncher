@@ -49,6 +49,7 @@ Route::DELETE('/delete/{logs}', [logscontroller::class, 'delete'])->name('delete
 
 Route::get('/export', [logscontroller::class, 'export'])->name('export');
 Route::get('/export/users', [usercontroller::class, 'exportusers'])->name('exportusers');
+Route::get('/export/logs', [logscontroller::class, 'exportlog'])->name('exportlog');
 Route::get('excel',function(){
     $spreadsheet = new Spreadsheet();
     $activeWorksheet = $spreadsheet->getActiveSheet();

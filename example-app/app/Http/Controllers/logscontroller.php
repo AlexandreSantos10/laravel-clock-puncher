@@ -44,11 +44,21 @@ class logscontroller extends Controller
 
         return view("look", ["logs" => $logs]);
     }
-    public function indexuser()
+    public function indexuser(Request $request)
     {
 
         $id = Auth::user()->id;
-        $logs = Logs::with('User')->where('user_id', $id)->orderBy('data', 'DESC')->paginate(3);;
+        $logs = Logs::with('User')->where('user_id', $id);
+        
+        if ($request->month != "") {
+            $date = $request->month;
+            $logs->where('data', 'like', "$date%");
+        }
+        if ($request->time != "") {
+            $date = $request->time;
+            $logs->whereDay('data', "$date%");
+        }
+        $logs=$logs->orderBy('data', 'DESC')->paginate(10);;
 
         return view('mylogs', compact('logs'));
     }
@@ -312,9 +322,6 @@ class logscontroller extends Controller
             header('Cache-Control: max-age=0');
         }
         if ($format == 'csv') {
-
-
-
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Csv($spreadsheet);
 
             $writer->setDelimiter(';');
@@ -323,7 +330,71 @@ class logscontroller extends Controller
 
 
             header('Content-Type: text/csv; charset=UTF-8');
-            header('Content-Disposition: attachment; filename="Users.csv"');
+            header('Content-Disposition: attachment; filename="logs.csv"');
+            header('Cache-Control: max-age=0');
+        }
+        $writer->save('php://output');
+        exit;
+    }
+
+     public function exportlog(Request $request)
+    {
+        $id = Auth::user()->id;
+        $logs = Logs::with('User')->where('user_id', $id);
+        
+        if ($request->name != "") {
+            $logs->whereHas('user', function ($query) use ($request) {
+                $query->where('name', $request->name);
+            });
+        }
+        if ($request->month != "") {
+            $logs->where('data', 'like', $request->month . '%');
+        }
+        if ($request->time != "") {
+            $logs->whereDay('data', $request->time);
+        }
+        $logs = $logs->orderBy('data', 'DESC')->get();
+        $format = $request->format;
+
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'ID');
+        $sheet->setCellValue('B1', 'User');
+        $sheet->setCellValue('C1', 'Date');
+        $sheet->setCellValue('D1', 'Entry');
+        $sheet->setCellValue('E1', 'Exit');
+        $sheet->setCellValue('F1', 'Total Hours');
+        $sheet->setCellValue('G1', 'Obs');
+
+        $row = 2;
+        foreach ($logs as $log) {
+            $sheet->setCellValue('A' . $row, $log->id);
+            $sheet->setCellValue('B' . $row, $log->user->name);
+            $sheet->setCellValue('C' . $row, $log->data);
+            $sheet->setCellValue('D' . $row, $log->entrada);
+            $sheet->setCellValue('E' . $row, $log->saida);
+            $sheet->setCellValue('F' . $row, $log->total_horas);
+            $sheet->setCellValue('G' . $row, $log->obs);
+            $row++;
+        }
+        if ($format == 'xlsx') {
+            $writer = new Xlsx($spreadsheet);
+
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="Mylogs.xlsx"');
+            header('Cache-Control: max-age=0');
+        }
+        if ($format == 'csv') {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Csv($spreadsheet);
+
+            $writer->setDelimiter(';');
+            $writer->setEnclosure('"');
+            $writer->setLineEnding("\r\n");
+
+
+            header('Content-Type: text/csv; charset=UTF-8');
+            header('Content-Disposition: attachment; filename="Mylogs.csv"');
             header('Cache-Control: max-age=0');
         }
         $writer->save('php://output');
