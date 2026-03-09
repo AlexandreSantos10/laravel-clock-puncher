@@ -15,11 +15,11 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('mylogs')" :active="request()->routeIs('mylogs')">
+                    <x-nav-link :href="route('userlogs')" :active="request()->routeIs('userlogs')">
                         {{ __('My Logs') }}
                     </x-nav-link>
                     @if(Auth::user()->tipo=='admin')
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                    <x-nav-link :href="route('adminlogs')" :active="request()->routeIs('adminlogs')">
                         {{ __('Manage Logs') }}
                     </x-nav-link>
                     <x-nav-link :href="route('userlist')" :active="request()->routeIs('userlist')">

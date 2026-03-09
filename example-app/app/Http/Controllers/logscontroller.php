@@ -14,42 +14,13 @@ use Illuminate\Support\Facades\Auth;
 
 class logscontroller extends Controller
 {
-    public function index(Request $request)
-    {
-        $users = User::all();
-        $logs = Logs::with('User');
-        if ($request->name != "") {
-            $logs->whereHas('user', function ($query) use ($request) {
-                $query->where('name', $request->name);
-            });
-        }
-        if ($request->month != "") {
-            $date = $request->month;
-            $logs->where('data', 'like', "$date%");
-        }
-        if ($request->time != "") {
-            $date = $request->time;
-            $logs->whereDay('data', "$date%");
-        }
 
-        $logs = $logs->orderBy('data', 'DESC')->paginate(10);
-
-        return view('dashboard', compact('logs', 'users'));
-    }
-
-    public function look(Logs $logs)
-    {
-        $id = $logs->id;
-        $logs = Logs::findOrFail($id);
-
-        return view("look", ["logs" => $logs]);
-    }
-    public function indexuser(Request $request)
+    public function userlogs(Request $request)
     {
 
         $id = Auth::user()->id;
         $logs = Logs::with('User')->where('user_id', $id);
-        
+
         if ($request->month != "") {
             $date = $request->month;
             $logs->where('data', 'like', "$date%");
@@ -58,15 +29,9 @@ class logscontroller extends Controller
             $date = $request->time;
             $logs->whereDay('data', "$date%");
         }
-        $logs=$logs->orderBy('data', 'DESC')->paginate(10);;
+        $logs = $logs->orderBy('data', 'DESC')->paginate(10);
 
-        return view('mylogs', compact('logs'));
-    }
-
-
-    public function create()
-    {
-        return view("createpost");
+        return view('user/logs', compact('logs'));
     }
     public function homepage(Request $request)
     {
@@ -82,17 +47,18 @@ class logscontroller extends Controller
                     $aux = 1;
 
                     if ($log->saida == "00:00:00") {
-                        return view("clockfinish", ['logs' => $log], ['users' => $users]);
+                        return view("user/clockfinish", ['logs' => $log], ['users' => $users]);
                     } else
-                        return view("clockfinished", ['logs' => $log]);
+                        return view("user/clockfinished", ['logs' => $log]);
                 }
             }
         }
         if ($aux == 0) {
-            return view("home");
+            return view("user/home");
         }
     }
-    public function logcreate(Request $request)
+
+    public function userlogcreate(Request $request)
     {
 
         $id = Auth::user()->id;
@@ -120,13 +86,12 @@ class logscontroller extends Controller
 
         return redirect(route('clockfinish', ['logs' => $logs], ['users' => $user]));
     }
-
-    public function logup(Logs $logs)
+    public function userlogup(Logs $logs)
     {
 
-        return view("clockfinish", compact('logs'));
+        return view("user/clockfinish", compact('logs'));
     }
-    public function logupdate(Logs $logs)
+    public function userlogupdate(Logs $logs)
     {
 
         $entrada = Carbon::parse($logs->entrada);
@@ -145,10 +110,37 @@ class logscontroller extends Controller
 
 
         $logs->update($data);
-        return view("clockfinished", ['logs' => $logs]);
+        return view("user/clockfinished", ['logs' => $logs]);
     }
 
-    public function postcreate(Request $request)
+    public function adminlogs(Request $request)
+    {
+        $users = User::all();
+        $logs = Logs::with('User');
+        if ($request->name != "") {
+            $logs->whereHas('user', function ($query) use ($request) {
+                $query->where('name', $request->name);
+            });
+        }
+        if ($request->month != "") {
+            $date = $request->month;
+            $logs->where('data', 'like', "$date%");
+        }
+        if ($request->time != "") {
+            $date = $request->time;
+            $logs->whereDay('data', "$date%");
+        }
+
+        $logs = $logs->orderBy('data', 'DESC')->paginate(10);
+
+        return view('admin/logs', compact('logs', 'users'));
+    }
+    public function createlogview()
+    {
+        $users = User::all();
+        return view("admin/createlogview",compact('users'));
+    }
+     public function createlog(Request $request)
     {
 
         $data = $request->validate([
@@ -199,17 +191,26 @@ class logscontroller extends Controller
 
 
 
-            return redirect(route('dashboard', absolute: false));
+            return redirect(route('adminlogs', absolute: false));
         } else {
-            return view("createpost", ["users" => $users])->with("message", "This user was already registered on this day");
+            return view("admin/createlogview", ["users" => $users])->with("message", "This user was already registered on this day");
         }
     }
+
+    public function looklog(Logs $logs)
+    {
+        $id = $logs->id;
+        $logs = Logs::findOrFail($id);
+
+        return view("admin/looklog", ["logs" => $logs]);
+    }
+    
     public function editlog(Logs $logs)
     {
         $users = User::all();
-        return view("editlog", ["logs" => $logs], ["users" => $users]);
+        return view("admin/editlog", ["logs" => $logs], ["users" => $users]);
     }
-    public function update(Logs $logs, Request $request)
+    public function updatelog(Logs $logs, Request $request)
     {
         $data = $request->validate([
             'data' => ['required'],
@@ -260,18 +261,18 @@ class logscontroller extends Controller
                 'updated_by' => $adm,
             ]);
             $logs->update($data);
-            return redirect(route('dashboard'));
+            return redirect(route('adminlogs'));
         } else {
-            return view('editlog', ["logs" => $log], ["users" => $user])->with("message", "This user was already registered on this day");
+            return view('admin/editlog', ["logs" => $log], ["users" => $user])->with("message", "This user was already registered on this day");
         }
     }
 
 
 
-    public function delete(Logs $logs)
+    public function deletelog(Logs $logs)
     {
         $logs->DELETE();
-        return redirect()->route("dashboard")->with("message", "The log has been sucessfully removed");
+        return redirect()->route("adminlogs")->with("message", "The log has been sucessfully removed");
     }
 
     public function export(Request $request)
@@ -295,23 +296,21 @@ class logscontroller extends Controller
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setCellValue('A1', 'ID');
-        $sheet->setCellValue('B1', 'User');
-        $sheet->setCellValue('C1', 'Date');
-        $sheet->setCellValue('D1', 'Entry');
-        $sheet->setCellValue('E1', 'Exit');
-        $sheet->setCellValue('F1', 'Total Hours');
-        $sheet->setCellValue('G1', 'Obs');
+        $sheet->setCellValue('A1', 'User');
+        $sheet->setCellValue('B1', 'Date');
+        $sheet->setCellValue('C1', 'Entry');
+        $sheet->setCellValue('D1', 'Exit');
+        $sheet->setCellValue('E1', 'Total Hours');
+        $sheet->setCellValue('F1', 'Obs');
 
         $row = 2;
         foreach ($logs as $log) {
-            $sheet->setCellValue('A' . $row, $log->id);
-            $sheet->setCellValue('B' . $row, $log->user->name);
-            $sheet->setCellValue('C' . $row, $log->data);
-            $sheet->setCellValue('D' . $row, $log->entrada);
-            $sheet->setCellValue('E' . $row, $log->saida);
-            $sheet->setCellValue('F' . $row, $log->total_horas);
-            $sheet->setCellValue('G' . $row, $log->obs);
+            $sheet->setCellValue('A' . $row, $log->user->name);
+            $sheet->setCellValue('B' . $row, $log->data);
+            $sheet->setCellValue('C' . $row, $log->entrada);
+            $sheet->setCellValue('D' . $row, $log->saida);
+            $sheet->setCellValue('E' . $row, $log->total_horas);
+            $sheet->setCellValue('F' . $row, $log->obs);
             $row++;
         }
         if ($format == 'xlsx') {
@@ -337,11 +336,11 @@ class logscontroller extends Controller
         exit;
     }
 
-     public function exportlog(Request $request)
+    public function exportuserlog(Request $request)
     {
         $id = Auth::user()->id;
         $logs = Logs::with('User')->where('user_id', $id);
-        
+
         if ($request->name != "") {
             $logs->whereHas('user', function ($query) use ($request) {
                 $query->where('name', $request->name);
@@ -359,23 +358,21 @@ class logscontroller extends Controller
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setCellValue('A1', 'ID');
-        $sheet->setCellValue('B1', 'User');
-        $sheet->setCellValue('C1', 'Date');
-        $sheet->setCellValue('D1', 'Entry');
-        $sheet->setCellValue('E1', 'Exit');
-        $sheet->setCellValue('F1', 'Total Hours');
-        $sheet->setCellValue('G1', 'Obs');
+        $sheet->setCellValue('A1', 'User');
+        $sheet->setCellValue('B1', 'Date');
+        $sheet->setCellValue('C1', 'Entry');
+        $sheet->setCellValue('D1', 'Exit');
+        $sheet->setCellValue('E1', 'Total Hours');
+        $sheet->setCellValue('F1', 'Obs');
 
         $row = 2;
         foreach ($logs as $log) {
-            $sheet->setCellValue('A' . $row, $log->id);
-            $sheet->setCellValue('B' . $row, $log->user->name);
-            $sheet->setCellValue('C' . $row, $log->data);
-            $sheet->setCellValue('D' . $row, $log->entrada);
-            $sheet->setCellValue('E' . $row, $log->saida);
-            $sheet->setCellValue('F' . $row, $log->total_horas);
-            $sheet->setCellValue('G' . $row, $log->obs);
+            $sheet->setCellValue('A' . $row, $log->user->name);
+            $sheet->setCellValue('B' . $row, $log->data);
+            $sheet->setCellValue('C' . $row, $log->entrada);
+            $sheet->setCellValue('D' . $row, $log->saida);
+            $sheet->setCellValue('E' . $row, $log->total_horas);
+            $sheet->setCellValue('F' . $row, $log->obs);
             $row++;
         }
         if ($format == 'xlsx') {

@@ -14,33 +14,31 @@
 
                         <div>
 
-                            <form action="/mylogs" method="get">
+                            <form action="/user/logs" method="get">
                                 @csrf
                                 <div class="flex justify-between sm:flex flex-wrap">
 
                                     <label for="table-search" class="sr-only">Search</label>
 
                                     <div class ="ml-2">
-                                        <input type="month" id="" name ="month"
-                                            value="{{ request('month') }}"
-                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm  focus:ring-yellow-400 focus:border-yellow-400 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-400 dark:focus:border-yellow-400" />
+                                        <x-text-input type="month" name="month"
+                                            value="{{ request('month') }}"/>
 
+                                            
                                     </div>
                                     <div class ="ml-2">
 
-                                        <input type="number" min="1" max="30" name ="time"
-                                            placeholder="PICK DAY" value="{{ request('time') }}"
-                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm  focus:ring-yellow-400 focus:border-yellow-400 block w-25 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-white dark:text-white dark:focus:yellow-400 dark:focus:border-yellow-400" />
+                                        <x-text-input type="number" min="1" max="30" name="time"
+                                            placeholder="DAY" value="{{ request('time') }}"
+                                            />
                                     </div>
 
 
                                     <div class="lg:pl-2">
-                                        <button type="submit" style="cursor: pointer"
-                                            class="text-yellow-400 hover:text-white border border-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-#ebab13-300 dark:text-yellow-300 dark:hover:text-white dark:hover:bg-yellow-400 dark:focus:ring-yellow-900">SEARCH
-                                        </button>
+                                        <x-secondary-app-button> SEARCH </x-secondary-app-button>
                                     </div>
                                     <div class="py-2">
-                                        <a href="mylogs">
+                                        <a href="/user/logs">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                                 stroke-width="1.5" stroke="currentColor" class="size-6">
                                                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -56,7 +54,7 @@
 
 
                     </div>
-                    <form action="{{ route('exportlog') }}" method="get">
+                    <form action="{{ route('exportuserlog') }}" method="get">
                         <input type="hidden" name ="month" value="{{ request('month') }}">
                         <input type="hidden" name ="time" value="{{ request('time') }}">
                         @csrf
@@ -72,14 +70,12 @@
                                 </select>
                             </div>
                             <div>
-                                <button type="submit" style="cursor: pointer"
-                                    class="text-yellow-400 hover:text-white border border-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium text-sm px-5 py-2 text-center me-2 mb-2 dark:border-#ebab13-300 dark:text-yellow-300 dark:hover:text-white dark:hover:bg-yellow-400 dark:focus:ring-yellow-900">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="size-6">
+                                <x-secondary-app-button><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="1.5" stroke="currentColor" class="size-5">
                                         <path stroke-linecap="round" stroke-linejoin="round"
                                             d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" />
                                     </svg>
-                                </button>
+                                </x-secondary-app-button>
                             </div>
                         </div>
                     </form>

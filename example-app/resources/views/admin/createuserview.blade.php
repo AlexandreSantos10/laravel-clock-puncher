@@ -1,16 +1,10 @@
 <x-app-layout>
-    <div class="py-12">
+    <div class="py-9">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm">
-                <div class="p-6 text-gray-900 dark:text-gray-100 flex justify-between">
-                    {{ __('Welcome to the Create a User Page! ') }}{{ Auth::user()->name }}
-
-                </div>
-            </div>
 
 
 
-            <form method="post" action="{{ route('usercreate') }}">
+            <form method="post" action="{{ route('createuser') }}">
                 @csrf
 
 
@@ -18,31 +12,27 @@
                     <div>
                         <label for="name"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Name</label>
-                        <input type="text" id="name" name="name"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:ring-yellow-500 focus:border-yellow-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-500 dark:focus:border-yellow-500"
-                            placeholder="John Doe" required />
+                        <x-text-input type="text" id="name" name="name"
+                           placeholder="John Doe" required />
                     </div>
                     <div>
                         <label for="email"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-                        <input type="text" id="email" name="email"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm  focus:ring-yellow-500 focus:border-yellow-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-500 dark:focus:border-yellow-500"
-                            placeholder="John@gmail.com" required />
+                        <x-text-input type="text" id="email" name="email"
+                             placeholder="John@gmail.com" required />
                     </div>
                     <div>
                         <label for="password"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
-                        <input type="password" id="password" name="password"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:ring-yellow-500 focus:border-yellow-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-500 dark:focus:border-yellow-500"
-                            placeholder="Password" required />
+                        <x-text-input type="password" id="password" name="password"
+                             placeholder="Password" required />
                     </div>
 
 
                     <div>
                         <label for="lunch" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Lunch
                             Start</label>
-                        <input type="time" id="lunch" name="lunch"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:ring-yellow-500 focus:border-yellow-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-500 dark:focus:border-yellow-500"
+                        <x-text-input type="time" id="lunch" name="lunch"
                             placeholder="13:00:00" required />
                     </div>
                     <div class="flex items-center mb-4">

@@ -4,18 +4,12 @@
             <span class="font-medium">Danger alert!</span> {{ $message }}
         </div>
     @endif
-    <div class="py-12">
+    <div class="py-9">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm ">
-                <div class="p-6 text-gray-900 dark:text-gray-100 flex justify-between">
-                    {{ __('Welcome to the Edit a Log Page! ') }}{{ Auth::user()->name }}
-
-                </div>
-
-            </div>
+            
 
 
-            <form action="{{ route('update', ['logs' => $logs]) }}" method="post">
+            <form action="{{ route('updatelog', ['logs' => $logs]) }}" method="post">
                 @csrf
                 @method('put')
                 <div class="grid gap-6 mb-6 md:grid-cols-2">
@@ -23,33 +17,27 @@
                     <div>
                         <label for="date"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Date</label>
-                        <input type="date" name ="data" id="date" value="{{ $logs->data }}"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:ring-yellow-500 focus:border-yellow-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-500 dark:focus:border-yellow-500"
+                        <x-text-input type="date" name="data" id="date" value="{{ $logs->data }}"
                             required />
                     </div>
                     <div>
                         <label for="entry"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Entry</label>
-                        <input type="time" id="entry" min="08:00" value="{{ $logs->entrada }}" name ="entrada"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:ring-yellow-500 focus:border-yellow-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-500 dark:focus:border-yellow-500"
-                            required />
+                        <x-text-input type="time" id="entry" min="08:00" value="{{ $logs->entrada }}" name="entrada" required />
                     </div>
 
                     <div>
                         <label for="left" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Left
                             At</label>
-                        <input type="time" id="left" min="{{ $logs->entrada }}" value="{{ $logs->saida }}"
-                            name = "saida"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:ring-yellow-500 focus:border-yellow-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-500 dark:focus:border-yellow-500"
+                        <x-text-input type="time" id="left" min="{{ $logs->entrada }}" value="{{ $logs->saida }}" name="saida"
                             required />
                     </div>
 
                     <div>
                         <label for="obs"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Obs</label>
-                        <input type="text" id="obs" name ="obs" value="{{ $logs->obs }}"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:ring-yellow-500 focus:border-yellow-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-500 dark:focus:border-yellow-500"
-                            placeholder=""required />
+                        <x-text-input type="text" id="obs" name="obs" value="{{ $logs->obs }}"
+                            placeholder="" required />
                     </div>
                 </div>
 
