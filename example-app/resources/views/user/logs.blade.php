@@ -63,7 +63,6 @@
                             <div>
                                 <select id="" name ="format"
                                     class="bg-gray-50 border border-gray-300 text-gray-900 text-sm focus:ring-yellow-400 focus:border-yellow-400 block w-25 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-yellow-400 dark:focus:border-yellow-400">
-                                    <option value="xlsx">EXPORT</option>
                                     <option value="xlsx">XLSX</option>
                                     <option value="csv">CSV</option>
 
