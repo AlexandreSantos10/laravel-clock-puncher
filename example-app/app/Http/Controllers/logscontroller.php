@@ -78,9 +78,9 @@ class logscontroller extends Controller
             'final_almoço' => $endlunch,
             'saida' => "00:00",
             "total_horas" => "00:00",
-            "obs" => "",
+            "obs" => "Manual Log",
             "created_by" => $user->name,
-            "updated_by" => "",
+            "updated_by" => "Not Updated",
         ]);
         $id = $logs->id;
 
@@ -99,13 +99,13 @@ class logscontroller extends Controller
         $sai = Carbon::parse($saida);
         $total = $entrada->diff($sai)->format('%H:%i');
 
-
+        $id = Auth::user()->id;
+        $user = User::findOrFail($id);
+        $name = $user->name;
         $data = ([
             'saida' => $saida,
             "total_horas" => $total,
-            "obs" => "",
-            "created_by" => "",
-            "updated_by" => "",
+            "updated_by" => $name,
         ]);
 
 
@@ -186,7 +186,7 @@ class logscontroller extends Controller
                 'total_horas' => $total,
                 'obs' => $request->obs,
                 'created_by' => $adm,
-                'updated_by' => "0",
+                'updated_by' => "Not Updated",
             ]);
 
 
