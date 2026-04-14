@@ -88,12 +88,10 @@ class logscontroller extends Controller
     }
     public function userlogup(Logs $logs)
     {
-
         return view("user/clockfinish", compact('logs'));
     }
     public function userlogupdate(Logs $logs)
     {
-
         $entrada = Carbon::parse($logs->entrada);
         $saida = Carbon::now()->format('H:i');
         $sai = Carbon::parse($saida);
@@ -131,7 +129,7 @@ class logscontroller extends Controller
             $logs->whereDay('data', "$date%");
         }
 
-        $logs = $logs->orderBy('data', 'DESC')->paginate(10);
+        $logs = $logs->orderBy('data', 'DESC')->orderBy('entrada', 'DESC')->paginate(10);
 
         return view('admin/logs', compact('logs', 'users'));
     }
@@ -155,8 +153,9 @@ class logscontroller extends Controller
         $user = User::findOrFail($id);
         $users = User::all();
         $logss = Logs::with('User')->where("user_id", $id)->get();
-        $datevalid = 0;
-
+        $datevalid = 0; 
+        
+    
         foreach ($logss as $log) {
             if ($log->data == $data["data"]) {
                 $datevalid = $datevalid + 1;

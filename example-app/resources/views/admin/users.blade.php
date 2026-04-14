@@ -64,6 +64,9 @@
                                     Email
                                 </th>
                                 <th scope="col" class="px-6 py-3 font-large text-gray-100">
+                                    Finger
+                                </th>
+                                <th scope="col" class="px-6 py-3 font-large text-gray-100">
                                     Type
                                 </th>
                                 <th scope="col" class="px-6 py-3 font-large text-gray-100">
@@ -84,7 +87,18 @@
                                     <td class="px-6 py-4 text-gray-100">
                                         {{ $user->email }}
                                     </td>
-
+                                    <td>
+                                        @if (!$user->finger)
+                                            <form action="{{ route('users.enroll', $user->id) }}" method="POST">
+                                                @csrf
+                                                <button style="cursor:pointer" type="submit" class="text-red-400">
+                                                    Enroll Finger
+                                                </button>
+                                            </form>
+                                        @else
+                                            <span class="badge bg-success text-yellow-400">✔ Active</span>
+                                        @endif
+                                    </td>
                                     <td class="px-6 py-4">
                                         <button
                                             class="{{ $user->tipo == 'admin' ? 'text-yellow-400' : 'text-gray-100' }}">

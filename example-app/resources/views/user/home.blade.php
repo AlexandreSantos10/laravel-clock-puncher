@@ -11,7 +11,6 @@
                         </a>
                         <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">Here you can keep track of how many
                             hours you do each day.</p>
-                        <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">Local time: {{ now() }}</p>
                         <form action="{{ route('logcreate') }}" method="post">
                             @csrf
                             <x-primary-app-button>START DAY</x-primary-app-button>

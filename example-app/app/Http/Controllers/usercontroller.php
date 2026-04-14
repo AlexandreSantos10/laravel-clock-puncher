@@ -11,6 +11,9 @@ use Illuminate\Validation\Rules;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Support\Facades\Cache;
+use PhpMqtt\Client\MqttClient;
+use PhpMqtt\Client\ConnectionSettings;
 
 class usercontroller extends Controller
 {
@@ -109,5 +112,67 @@ class usercontroller extends Controller
         }
 
         return redirect()->back();
+    }
+
+    public function enroll($id)
+    {
+        // 1. Impedir que o PHP desligue o script antes do tempo (damos 90s de margem)
+        set_time_limit(90);
+
+        $user = User::findOrFail($id);
+        $statusKey = "enroll_status_{$id}";
+        $activeKey = "active_enrollment_id";
+
+        // Limpar tentativas anteriores e marcar este ID como o "alvo" atual
+        Cache::forget($statusKey);
+        Cache::put($activeKey, $id, 120);
+
+        try {
+            // 2. Ligar ao MQTT e publicar o pedido de matrícula
+            $settings = (new ConnectionSettings)
+                ->setUseTls(true)
+                ->setTlsVerifyPeer(false)
+                ->setUsername(config('mqtt.username'))
+                ->setPassword(config('mqtt.password'));
+
+            $mqtt = new MqttClient(config('mqtt.host'), (int) config('mqtt.port'), 'enroll_web_client_' . $id);
+            $mqtt->connect($settings, true);
+
+            // Enviamos o ID para o sensor saber em que slot gravar (ou associar)
+            $mqtt->publish('Enroll/UserID', (string)$id, 0);
+            $mqtt->publish('Enroll/Nome', $user->name, 0);
+            $mqtt->disconnect();
+
+            // 3. O Loop de Espera (60 segundos)
+            $timeout = 60;
+            $start = time();
+
+            while (time() - $start < $timeout) {
+                // O Worker (EscutarPonto) vai escrever nesta chave quando o sensor responder
+                if (Cache::has($statusKey)) {
+                    $resultado = Cache::get($statusKey);
+
+                    Cache::forget($statusKey);
+                    Cache::forget($activeKey);
+
+                    if ($resultado === "1") {
+                        // Sucesso! Atualizamos o campo booleano que criaste na migration
+                        $user->update(['finger' => true]);
+                        return back()->with('success', "A impressão digital de {$user->name} foi registada com sucesso!");
+                    } else {
+                        return back()->with('error', "O sensor comunicou uma falha na leitura do dedo.");
+                    }
+                }
+
+                // Dorme meio segundo para não sobrecarregar o CPU do servidor
+                usleep(500000);
+            }
+
+            // Se o tempo esgotar
+            Cache::forget($activeKey);
+            return back()->with('error', 'O tempo limite de 1 minuto foi atingido. O sensor não respondeu.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Erro ao comunicar com o Broker: ' . $e->getMessage());
+        }
     }
 }

@@ -10,7 +10,7 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    return view('user/home');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -45,7 +45,7 @@ Route::get('/admin/looklog/{logs}', [logscontroller::class, 'looklog']);
 Route::get('/admin/editlog/{logs}', [logscontroller::class, 'editlog']);
 Route::put('/admin/editlog/{logs}/update', [logscontroller::class, 'updatelog'])->name('updatelog');
 
-
+Route::post('/users/{id}/enroll', [UserController::class, 'enroll'])->name('users.enroll');
 
 
 

@@ -13,7 +13,7 @@ use Carbon\Carbon;
 class EscutarPonto extends Command
 {
     protected $signature = 'mqtt:escutar';
-    protected $description = 'Subscreve os tópicos MQTT do ESP32 e regista os pontos';
+    protected $description = 'Subscreve os tópicos MQTT do ESP32 e regista os pontos e matrículas';
 
     public function handle()
     {
@@ -29,45 +29,45 @@ class EscutarPonto extends Command
             ->setReconnectAutomatically(true) 
             ->setDelayBetweenReconnectAttempts(5) 
             ->setMaxReconnectAttempts(100);
+            
         $mqtt = new MqttClient(config('mqtt.host'), (int) config('mqtt.port'), 'laravel-ponto-worker');
+       
         $mqtt->connect($settings, false);
 
         $this->info('Ligado! A escutar tópicos...');
 
-        $mqtt->subscribe('ponto/fingerid', function (string $topic, string $message) {
-            Cache::put('mqtt_temp_id', $message, 60);
-            $this->info("Recebido ID: " . $message);
-        }, 0);
-
-        $mqtt->subscribe('ponto/date', function (string $topic, string $message) {
-            Cache::put('mqtt_temp_date', $message, 60);
-            $this->info("Recebida Data: " . $message);
-        }, 0);
-
-        $mqtt->subscribe('ponto/time', function (string $topic, string $message) use ($mqtt) {
+        $mqtt->subscribe('Ponto/FingerID', function (string $topic, string $message) use ($mqtt) {
             try {
-                $id = Cache::get('mqtt_temp_id');
-                $date = Cache::get('mqtt_temp_date');
-                $time = $message;
+                $date = Carbon::now()->format('Y-m-d');
+                $time = Carbon::now()->format('H:i');
 
-                $this->info("Recebida Hora: " . $time);
+                $this->info("Recebido ID: " . $message . " | Gerado: " . $date . " " . $time);
+                $this->registarPonto($message, $date, $time, $mqtt);
 
-                if ($id && $date && $time) {
-                    $this->registarPonto($id, $date, $time, $mqtt);
-                    
-                    Cache::forget('mqtt_temp_id');
-                    Cache::forget('mqtt_temp_date');
-                } else {
-                    $this->error("Aviso: Dados incompletos. Faltou receber algum tópico.");
-                }
             } catch (\Throwable $e) {
-                $this->error("ERRO CRÍTICO DETETADO: " . $e->getMessage());
-                $this->error("No ficheiro: " . $e->getFile() . " (Linha: " . $e->getLine() . ")");
+                $this->error("Erro no processamento do ponto: " . $e->getMessage());
             }
         }, 0);
 
-        $mqtt->subscribe('enroll/response', function (string $topic, string $message) {
-            $this->info("Recebida resposta de enroll: " . $message);
+        $mqtt->subscribe('Enroll/Response', function (string $topic, string $message) {
+            $this->info("--- EVENTO DE ENROLL DETETADO ---");
+            
+            $userId = Cache::get('active_enrollment_id');
+
+            if ($userId) {
+                $this->info("Resultado recebido do sensor: " . $message . " para o User ID: " . $userId);
+                if ($message === "1") {
+                    $user = User::find($userId);
+                    if ($user) {
+                        $user->update(['finger' => true]);
+                        $this->info("Base de Dados atualizada: Biometria Ativa para {$user->name}");
+                    }
+                }
+                Cache::put("enroll_status_{$userId}", $message, 30);
+                
+            } else {
+                $this->error("Recebi '{$message}' do sensor, mas não há nenhum pedido de matrícula ativo no Dashboard.");
+            }
         }, 0);
 
         $mqtt->loop(true); 
@@ -75,21 +75,17 @@ class EscutarPonto extends Command
 
     public function registarPonto($user_id, $data, $hora, $mqtt)
     {
-        $this->info("Entrou na função de registo!");
-        
         $user = User::find($user_id);
 
         if (!$user) {
             $this->error('Utilizador não encontrado: ' . $user_id);
-            $mqtt->publish('ponto/response', 'Erro: User Nao Encontrado', 0, false);
+            $mqtt->publish('Ponto/Response', 'Erro: User Nao Encontrado', 0, false);
             return;
         }
 
         $log = Logs::where('user_id', $user->id)->where('data', $data)->first();
 
         if (!$log) {
-            $this->info("A criar nova entrada...");
-            
             $fimAlmoco = $user->inicio_almoco 
                 ? Carbon::parse($user->inicio_almoco)->addHour()->format('H:i') 
                 : '14:00';
@@ -103,29 +99,31 @@ class EscutarPonto extends Command
                 'total_horas'  => "00:00",
                 'obs'          => "Automatic Log",
                 'created_by'   => "Laravel System",
-                'updated_by'    => "Not Updated",
+                'updated_by'   => "Not Updated",
             ]);
-            $this->info('Entrada registada: ' . $user->name);
+            $this->info('Entrada registada para: ' . $user->name);
 
         } else if (!$log->saida || $log->saida === '00:00' || $log->saida === '00:00:00') {
             
-            $this->info("A registar saída...");
             $horaEntrada = Carbon::parse($log->entrada);
             $horaSaida = Carbon::parse($hora);
             $minutosTrabalhados = $horaEntrada->diffInMinutes($horaSaida);
+            
             if ($minutosTrabalhados > 60) {
                 $minutosTrabalhados -= 60;
             }
+            
             $totalHorasCalculado = sprintf('%02d:%02d:00', intdiv($minutosTrabalhados, 60), $minutosTrabalhados % 60);
+            
             $log->update([
                 'saida'       => $hora,
                 'total_horas' => $totalHorasCalculado,
-                'updated_by'   => "Laravel System",
+                'updated_by'  => "Laravel System",
             ]);
 
-            $this->info('Saída registada: ' . $user->name . ' | Total Horas: ' . $totalHorasCalculado);
+            $this->info('Saída registada para: ' . $user->name . ' | Total: ' . $totalHorasCalculado);
         }
 
-        $mqtt->publish('ponto/response', $user->name, 0, false);
+        $mqtt->publish('Ponto/Response', $user->name, 0, false);
     }
 }
