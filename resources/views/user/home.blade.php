@@ -13,7 +13,7 @@
                             hours you do each day.</p>
                         <form action="{{ route('logcreate') }}" method="post">
                             @csrf
-                            <x-primary-app-button>START DAY</x-primary-app-button>
+                            <x-primary-app-button>START</x-primary-app-button>
                         </form>
 
 
