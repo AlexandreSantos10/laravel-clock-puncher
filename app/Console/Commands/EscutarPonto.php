@@ -13,11 +13,11 @@ use Carbon\Carbon;
 class EscutarPonto extends Command
 {
     protected $signature = 'mqtt:escutar';
-    protected $description = 'Subscreve os tópicos MQTT do ESP32 e regista os pontos e matrículas';
+    protected $description = 'Subscribes to MQTT topics from the ESP32 and registers attendance and enrollments';
 
     public function handle()
     {
-        $this->info('A iniciar ligação ao broker MQTT...');
+        $this->info('Starting connection to the MQTT broker...');
 
         $settings = (new ConnectionSettings)
             ->setUseTls(true)
@@ -30,43 +30,46 @@ class EscutarPonto extends Command
             ->setDelayBetweenReconnectAttempts(5) 
             ->setMaxReconnectAttempts(100);
             
-        $mqtt = new MqttClient(config('mqtt.host'), (int) config('mqtt.port'), 'laravel-ponto-worker');
+        $mqtt = new MqttClient(config('mqtt.host'), (int) config('mqtt.port'), 'laravel-attendance-worker');
        
         $mqtt->connect($settings, false);
 
-        $this->info('Ligado! A escutar tópicos...');
+        $this->info('On! Listening to the topics...');
 
+        // --- Attendance Logic (Clock-in/out) ---
         $mqtt->subscribe('Ponto/FingerID', function (string $topic, string $message) use ($mqtt) {
             try {
                 $date = Carbon::now()->format('Y-m-d');
                 $time = Carbon::now()->format('H:i');
 
-                $this->info("Recebido ID: " . $message . " | Gerado: " . $date . " " . $time);
+                $this->info("Received ID: " . $message . " | Generated: " . $date . " " . $time);
                 $this->registarPonto($message, $date, $time, $mqtt);
 
             } catch (\Throwable $e) {
-                $this->error("Erro no processamento do ponto: " . $e->getMessage());
+                $this->error("Error processing attendance: " . $e->getMessage());
             }
         }, 0);
 
+        // --- Enrollment Logic (Registering new users) ---
         $mqtt->subscribe('Enroll/Response', function (string $topic, string $message) {
-            $this->info("--- EVENTO DE ENROLL DETETADO ---");
+            $this->info("--- Enroll event detected ---");
             
             $userId = Cache::get('active_enrollment_id');
 
             if ($userId) {
-                $this->info("Resultado recebido do sensor: " . $message . " para o User ID: " . $userId);
+                $this->info("Result received from sensor: " . $message . " for User ID: " . $userId);
+                
                 if ($message === "1") {
                     $user = User::find($userId);
                     if ($user) {
                         $user->update(['finger' => true]);
-                        $this->info("Base de Dados atualizada: Biometria Ativa para {$user->name}");
+                        $this->info("Database updated: Biometry Active for {$user->name}");
                     }
                 }
                 Cache::put("enroll_status_{$userId}", $message, 30);
                 
             } else {
-                $this->error("Recebi '{$message}' do sensor, mas não há nenhum pedido de matrícula ativo no Dashboard.");
+                $this->error("Received '{$message}' from sensor, but there is no active enrollment request on the Dashboard.");
             }
         }, 0);
 
@@ -78,14 +81,15 @@ class EscutarPonto extends Command
         $user = User::find($user_id);
 
         if (!$user) {
-            $this->error('Utilizador não encontrado: ' . $user_id);
-            $mqtt->publish('Ponto/Response', 'Erro: User Nao Encontrado', 0, false);
+            $this->error('User not found: ' . $user_id);
+            $mqtt->publish('Ponto/Response', 'Error: User Not Found', 0, false);
             return;
         }
 
         $log = Logs::where('user_id', $user->id)->where('data', $data)->first();
 
         if (!$log) {
+            // Logic for a new clock-in entry
             $fimAlmoco = $user->inicio_almoco 
                 ? Carbon::parse($user->inicio_almoco)->addHour()->format('H:i') 
                 : '14:00';
@@ -101,14 +105,16 @@ class EscutarPonto extends Command
                 'created_by'   => "Laravel System",
                 'updated_by'   => "Not Updated",
             ]);
-            $this->info('Entrada registada para: ' . $user->name);
+            $this->info('Clock-in registered for: ' . $user->name);
 
         } else if (!$log->saida || $log->saida === '00:00' || $log->saida === '00:00:00') {
             
+            // Logic for clock-out entry
             $horaEntrada = Carbon::parse($log->entrada);
             $horaSaida = Carbon::parse($hora);
             $minutosTrabalhados = $horaEntrada->diffInMinutes($horaSaida);
             
+            // Deducting lunch hour if worked more than 60 mins
             if ($minutosTrabalhados > 60) {
                 $minutosTrabalhados -= 60;
             }
@@ -121,7 +127,7 @@ class EscutarPonto extends Command
                 'updated_by'  => "Laravel System",
             ]);
 
-            $this->info('Saída registada para: ' . $user->name . ' | Total: ' . $totalHorasCalculado);
+            $this->info('Clock-out registered for: ' . $user->name . ' | Total Time: ' . $totalHorasCalculado);
         }
 
         $mqtt->publish('Ponto/Response', $user->name, 0, false);
