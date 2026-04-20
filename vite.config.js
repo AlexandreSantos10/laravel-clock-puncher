@@ -11,7 +11,8 @@ export default defineConfig({
         tailwindcss(),
     ],
     server: {
-        host: '0.0.0.0',
+        // MUDANÇA AQUI: Alterado de '0.0.0.0' para 'localhost'
+        host: 'localhost', 
         port: 5173,
         strictPort: true,
         ...(process.env.DDEV_PRIMARY_URL_WITHOUT_PORT
