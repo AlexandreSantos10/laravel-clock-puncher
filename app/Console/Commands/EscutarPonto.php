@@ -50,7 +50,7 @@ class EscutarPonto extends Command
             }
         }, 0);
 
-        // --- Enrollment Logic (Registering new users) ---
+        
         $mqtt->subscribe('Enroll/Response', function (string $topic, string $message) {
             $this->info("--- Enroll event detected ---");
             
