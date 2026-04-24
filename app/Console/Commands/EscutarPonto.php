@@ -12,7 +12,7 @@ use Carbon\Carbon;
 
 class EscutarPonto extends Command
 {
-    protected $signature = 'mqtt:escutar';
+    protected $signature = 'mqtt:listen';
     protected $description = 'Subscribes to MQTT topics from the ESP32 and registers attendance and enrollments';
 
     public function handle()
