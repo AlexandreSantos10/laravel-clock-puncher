@@ -30,13 +30,19 @@ class EscutarPonto extends Command
             ->setDelayBetweenReconnectAttempts(5) 
             ->setMaxReconnectAttempts(100);
             
-        $mqtt = new MqttClient(config('mqtt.host'), (int) config('mqtt.port'), 'laravel-attendance-worker');
+        
        
-        $mqtt->connect($settings, false);
+        $clientId = 'laravel-worker-' . uniqid();
+        $mqtt = new MqttClient(config('mqtt.host'), (int) config('mqtt.port'), $clientId);
+       
+        $mqtt->connect($settings, true);
 
         $this->info('On! Listening to the topics...');
 
-        // --- Attendance Logic (Clock-in/out) ---
+        $mqtt->subscribe('#', function (string $topic, string $message) {
+            $this->info("RECEBI ALGO! Tópico: {$topic} | Mensagem: {$message}");
+        }, 0);
+
         $mqtt->subscribe('Ponto/FingerID', function (string $topic, string $message) use ($mqtt) {
             try {
                 $date = Carbon::now()->format('Y-m-d');
