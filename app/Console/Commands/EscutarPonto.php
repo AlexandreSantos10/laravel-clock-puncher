@@ -19,6 +19,7 @@ class EscutarPonto extends Command
     {
         $this->info('Starting connection to the MQTT broker...');
 
+   
         $settings = (new ConnectionSettings)
             ->setUseTls(true)
             ->setTlsVerifyPeer(false)
@@ -30,12 +31,11 @@ class EscutarPonto extends Command
             ->setDelayBetweenReconnectAttempts(5) 
             ->setMaxReconnectAttempts(100);
             
-        
-       
-        $clientId = 'laravel-worker-' . uniqid();
+        $clientId = 'laravel-worker-producao-oficial'; 
         $mqtt = new MqttClient(config('mqtt.host'), (int) config('mqtt.port'), $clientId);
        
-        $mqtt->connect($settings, true);
+       
+        $mqtt->connect($settings, false);
 
         $this->info('On! Listening to the topics...');
 
