@@ -116,19 +116,18 @@ class usercontroller extends Controller
 
     public function enroll($id)
     {
-        // 1. Impedir que o PHP desligue o script antes do tempo (damos 90s de margem)
+        
         set_time_limit(90);
 
         $user = User::findOrFail($id);
         $statusKey = "enroll_status_{$id}";
         $activeKey = "active_enrollment_id";
 
-        // Limpar tentativas anteriores e marcar este ID como o "alvo" atual
         Cache::forget($statusKey);
         Cache::put($activeKey, $id, 120);
 
         try {
-            // 2. Ligar ao MQTT e publicar o pedido de matrícula
+     
             $settings = (new ConnectionSettings)
                 ->setUseTls(true)
                 ->setTlsVerifyPeer(false)
@@ -138,17 +137,15 @@ class usercontroller extends Controller
             $mqtt = new MqttClient(config('mqtt.host'), (int) config('mqtt.port'), 'enroll_web_client_' . $id);
             $mqtt->connect($settings, true);
 
-            // Enviamos o ID para o sensor saber em que slot gravar (ou associar)
             $mqtt->publish('Enroll/UserID', (string)$id, 0);
             $mqtt->publish('Enroll/Nome', $user->name, 0);
             $mqtt->disconnect();
 
-            // 3. O Loop de Espera (60 segundos)
             $timeout = 60;
             $start = time();
 
             while (time() - $start < $timeout) {
-                // O Worker (EscutarPonto) vai escrever nesta chave quando o sensor responder
+                
                 if (Cache::has($statusKey)) {
                     $resultado = Cache::get($statusKey);
 
@@ -156,7 +153,7 @@ class usercontroller extends Controller
                     Cache::forget($activeKey);
 
                     if ($resultado === "1") {
-                        // Sucesso! Atualizamos o campo booleano que criaste na migration
+                        
                         $user->update(['finger' => true]);
                         return back()->with('success', "A impressão digital de {$user->name} foi registada com sucesso!");
                     } else {
@@ -164,7 +161,6 @@ class usercontroller extends Controller
                     }
                 }
 
-                // Dorme meio segundo para não sobrecarregar o CPU do servidor
                 usleep(500000);
             }
 

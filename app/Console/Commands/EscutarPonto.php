@@ -41,7 +41,7 @@ class EscutarPonto extends Command
 
         $mqtt->subscribe('#', function (string $topic, string $message) {
             $this->info("RECEBI ALGO! Tópico: {$topic} | Mensagem: {$message}");
-        }, 0);
+        }, 1 );
 
         $mqtt->subscribe('Ponto/FingerID', function (string $topic, string $message) use ($mqtt) {
             try {
@@ -54,7 +54,7 @@ class EscutarPonto extends Command
             } catch (\Throwable $e) {
                 $this->error("Error processing attendance: " . $e->getMessage());
             }
-        }, 0);
+        }, 1);
 
         
         $mqtt->subscribe('Enroll/Response', function (string $topic, string $message) {
@@ -77,7 +77,7 @@ class EscutarPonto extends Command
             } else {
                 $this->error("Received '{$message}' from sensor, but there is no active enrollment request on the Dashboard.");
             }
-        }, 0);
+        }, 1);
 
         $mqtt->loop(true); 
     }
