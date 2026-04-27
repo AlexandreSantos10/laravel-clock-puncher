@@ -76,6 +76,8 @@ class EscutarPonto extends Command
         $mqtt->loop(true); 
     }
 
+
+  
     public function registarPonto($user_id, $data, $hora, $mqtt)
     {
         $user = User::find($user_id);
