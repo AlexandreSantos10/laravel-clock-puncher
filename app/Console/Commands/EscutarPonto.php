@@ -7,7 +7,7 @@ use PhpMqtt\Client\MqttClient;
 use PhpMqtt\Client\ConnectionSettings;
 use Illuminate\Support\Facades\Cache;
 use App\Models\User;
-use App\Models\Logs;
+use App\Models\logs;
 use Carbon\Carbon;
 
 class EscutarPonto extends Command
