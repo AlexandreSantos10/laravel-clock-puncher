@@ -12,6 +12,11 @@ Route::get('/', function () {
 //Route::post('/esp32/ponto', [logscontroller::class, 'receberPontoDoEsp32']);
 Route::post('/esp32/enroll-status', [usercontroller::class, 'receberStatusEnroll']);
 
+Route::post('/esp32/delete-finger-status', [usercontroller::class, 'receberStatusDeleteFinger']);
+
+
+
+
 Route::middleware('auth')->group(function () {
 
     // Dashboard Principal
@@ -51,6 +56,7 @@ Route::middleware('auth')->group(function () {
 
         // Gestão de Utilizadores
         Route::get('/users', [usercontroller::class, 'userlist'])->name('userlist');
+        Route::post('/users/{id}/delete-finger', [usercontroller::class, 'deleteFinger'])->name('users.delete_finger');
         Route::get('/createuserview', [usercontroller::class, 'createuserview'])->name('createuserview');
         Route::post('/usercreate', [usercontroller::class, 'createuser'])->name('createuser');
         Route::put('/change/{user}', [usercontroller::class, 'changeusertype'])->name('changeusertype');

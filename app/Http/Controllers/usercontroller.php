@@ -116,61 +116,30 @@ class usercontroller extends Controller
 
     public function enroll($id)
     {
-        
-        set_time_limit(90);
-
         $user = User::findOrFail($id);
-        $statusKey = "enroll_status_{$id}";
-        $activeKey = "active_enrollment_id";
-
-        Cache::forget($statusKey);
-        Cache::put($activeKey, $id, 120);
 
         try {
-     
-            $settings = (new ConnectionSettings)
+            $settings = (new \PhpMqtt\Client\ConnectionSettings)
                 ->setUseTls(true)
                 ->setTlsVerifyPeer(false)
                 ->setUsername(config('mqtt.username'))
                 ->setPassword(config('mqtt.password'));
 
-            $mqtt = new MqttClient(config('mqtt.host'), (int) config('mqtt.port'), 'enroll_web_client_' . $id);
+            $mqtt = new \PhpMqtt\Client\MqttClient(config('mqtt.host'), (int) config('mqtt.port'), 'enroll_web_client_' . $id);
             $mqtt->connect($settings, true);
 
             $mqtt->publish('Enroll/UserID', (string)$id, 0, false);
             $mqtt->publish('Enroll/Nome', $user->name, 0, false);
             $mqtt->disconnect();
 
-            $timeout = 60;
-            $start = time();
+          
+            return back()->with('success', "Comando enviado para o sensor! Peça ao funcionário {$user->name} para colocar o dedo na máquina.");
 
-            while (time() - $start < $timeout) {
-                
-                if (Cache::has($statusKey)) {
-                    $resultado = Cache::get($statusKey);
-
-                    Cache::forget($statusKey);
-                    Cache::forget($activeKey);
-
-                    if ($resultado === "1") {
-                        
-                        $user->update(['finger' => true]);
-                        return back()->with('success', "A impressão digital de {$user->name} foi registada com sucesso!");
-                    } else {
-                        return back()->with('error', "O sensor comunicou uma falha na leitura do dedo.");
-                    }
-                }
-
-                usleep(500000);
-            }
-
-            // Se o tempo esgotar
-            Cache::forget($activeKey);
-            return back()->with('error', 'O tempo limite de 1 minuto foi atingido. O sensor não respondeu.');
         } catch (\Exception $e) {
             return back()->with('error', 'Erro ao comunicar com o Broker: ' . $e->getMessage());
         }
     }
+
     public function receberStatusEnroll(Request $request)
     {
         $userId = $request->input('user_id');
@@ -195,6 +164,61 @@ class usercontroller extends Controller
             return response()->json(['sucesso' => true, 'mensagem' => 'Biometria ativa com sucesso!'], 200);
         } else {
             return response()->json(['sucesso' => false, 'mensagem' => 'Erro na leitura do dedo'], 200);
+        }
+    }
+    
+    public function deleteFinger($id)
+    {
+        $user = \App\Models\User::findOrFail($id);
+
+        try {
+            
+            $settings = (new \PhpMqtt\Client\ConnectionSettings)
+                ->setUseTls(true)
+                ->setTlsVerifyPeer(false)
+                ->setUsername(config('mqtt.username'))
+                ->setPassword(config('mqtt.password'));
+
+            $mqtt = new \PhpMqtt\Client\MqttClient(config('mqtt.host'), (int) config('mqtt.port'), 'delete_web_client_' . $id);
+            $mqtt->connect($settings, true);
+
+            
+            $mqtt->publish('Delete/UserID', (string)$id, 0, false);
+            $mqtt->disconnect();
+
+            return back()->with('success', "Comando enviado! O sensor vai apagar a biometria de {$user->name}.");
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Erro ao comunicar com o Broker MQTT: ' . $e->getMessage());
+        }
+    }
+
+
+    
+    public function receberStatusDeleteFinger(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $status = $request->input('status'); 
+
+        if ($userId === null || $status === null) {
+            return response()->json(['erro' => 'Dados incompletos'], 400);
+        }
+
+        $user = \App\Models\User::find($userId);
+
+        if (!$user) {
+            return response()->json(['erro' => 'Utilizador não encontrado'], 404);
+        }
+
+        if ($status == 1) {
+            // Sucesso! Atualiza a base de dados dizendo que ele já não tem dedo registado
+            $user->update([
+                'finger' => 0 
+            ]);
+
+            return response()->json(['sucesso' => true, 'mensagem' => 'Biometria removida com sucesso da base de dados!'], 200);
+        } else {
+            return response()->json(['sucesso' => false, 'mensagem' => 'Erro do ESP32 ao tentar apagar a biometria'], 200);
         }
     }
 }

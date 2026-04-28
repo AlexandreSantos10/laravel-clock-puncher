@@ -123,7 +123,6 @@
                                         </td>
                                     @endif
                                     <el-dialog>
-
                                         <dialog id="dialog{{ $user->id }}"
                                             aria-labelledby="dialog-title{{ $user->id }}"
                                             class="fixed inset-0 m-0 size-auto max-h-none max-w-none overflow-y-auto bg-transparent p-0 backdrop:bg-transparent">
@@ -134,42 +133,54 @@
                                             <div tabindex="0"
                                                 class="flex min-h-full items-end justify-center p-4 text-center focus:outline focus:outline-0 sm:items-center sm:p-0">
                                                 <el-dialog-panel
-                                                    class="relative transform overflow-hidden bg-gray-800 text-left shadow-xl outline outline-1 -outline-offset-1 outline-white/10 transition-all data-[closed]:translate-y-4 data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in sm:my-8 sm:max-w-lg data-[closed]:sm:translate-y-0 data-[closed]:sm:scale-95">
+                                                    class="relative transform overflow-hidden bg-gray-800 text-left shadow-xl outline outline-1 -outline-offset-1 outline-white/10 transition-all data-[closed]:translate-y-4 data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in sm:my-8 sm:max-w-lg w-full data-[closed]:sm:translate-y-0 data-[closed]:sm:scale-95">
                                                     <div class="bg-gray-800 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                                                         <div class="sm:flex sm:items-start">
-
                                                             <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
                                                                 <h3 id="dialog-title"
                                                                     class="text-base font-semibold text-white">
-                                                                    Switch User Role</h3>
+                                                                    Manage User: {{ $user->name }}
+                                                                </h3>
                                                                 <div class="mt-2">
-                                                                    <p class="text-sm text-gray-400">Are u sure u
-                                                                        want to switch
-                                                                        {{ $user->name }}'s role?</p>
+                                                                    <p class="text-sm text-gray-400">
+                                                                        You can switch the user role or remove their fingerprint access.
+                                                                    </p>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div
-                                                        class="bg-gray-700/25 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 justify-center items-center">
-                                                        <form action="{{ route('changeusertype', $user->id) }}"
-                                                            method="POST">
-                                                            @csrf
-                                                            @method('PUT')
-                                                            <x-primary-app-button type="submit"
-                                                                commandfor="dialog">Switch</x-primary-app-button>
+                                                    
+                                                    <div class="bg-gray-700/25 px-4 py-3 flex flex-wrap items-center justify-between sm:px-6">
+                                                        
+                                                        <div>
+                                                            @if($user->finger)
+                                                            <form action="{{ route('users.delete_finger', $user->id) }}" method="POST">
+                                                                @csrf
+                                                                <button type="submit" class="text-red-500 hover:text-white border border-red-500 hover:bg-red-600 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2 text-center transition-colors">
+                                                                    Remove Fingerprint
+                                                                </button>
+                                                            </form>
+                                                            @endif
+                                                        </div>
 
+                                                        <div class="flex items-center mt-3 sm:mt-0">
                                                             <button type="button" style="cursor: pointer"
-                                                                class="text-yellow-400 hover:text-white border border-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium text-sm px-5 py-2 text-center me-2 dark:border-#ebab13-300 dark:text-yellow-300 dark:hover:text-white dark:hover:bg-yellow-400 dark:focus:ring-yellow-900"
+                                                                class="text-yellow-400 hover:text-white border border-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium text-sm px-5 py-2 text-center me-2 transition-colors"
                                                                 command="close"
                                                                 commandfor="dialog{{ $user->id }}">Cancel</button>
-                                                        </form>
+
+                                                            <form action="{{ route('changeusertype', $user->id) }}" method="POST" class="inline-block">
+                                                                @csrf
+                                                                @method('PUT')
+                                                                <x-primary-app-button type="submit" commandfor="dialog">Switch Role</x-primary-app-button>
+                                                            </form>
+                                                        </div>
+
                                                     </div>
                                                 </el-dialog-panel>
                                             </div>
                                         </dialog>
                                     </el-dialog>
-
 
                                 </tr>
                             @endforeach
