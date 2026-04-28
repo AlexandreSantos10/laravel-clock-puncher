@@ -5,12 +5,13 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\usercontroller;
 use App\Http\Controllers\logscontroller;
 
-// Rotas Públicas (Acessíveis sem login)
+
 Route::get('/', function () {
     return view('welcome');
 });
+//Route::post('/esp32/ponto', [logscontroller::class, 'receberPontoDoEsp32']);
+Route::post('/esp32/enroll-status', [usercontroller::class, 'receberStatusEnroll']);
 
-// Todas as rotas dentro deste grupo exigem que o utilizador esteja logado
 Route::middleware('auth')->group(function () {
 
     // Dashboard Principal

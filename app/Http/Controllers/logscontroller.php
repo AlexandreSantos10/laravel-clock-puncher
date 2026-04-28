@@ -396,4 +396,63 @@ class logscontroller extends Controller
         $writer->save('php://output');
         exit;
     }
+    /*
+    public function receberPontoDoEsp32(Request $request)
+    {
+       
+        $userId = $request->input('user_id');
+
+        if ($userId === null) {
+            return response()->json(['erro' => 'UserID não recebido'], 400);
+        }
+
+        $user = \App\Models\User::find($userId);
+
+        if (!$user) {
+            return response()->json(['erro' => 'Utilizador não existe na base de dados'], 404);
+        }
+
+        $dataAtual = Carbon::now()->format('Y/m/d');
+        $horaAtual = Carbon::now()->format('H:i');
+
+        $logDeHoje = \App\Models\logs::where('user_id', $user->id)
+                                     ->where('data', $dataAtual)
+                                     ->first();
+
+        if (!$logDeHoje) {
+           
+            $endlunch = Carbon::parse($user->inicio_almoco);
+            $aux = $endlunch->hour + 1;
+            $endlunch->hour = $aux;
+
+            \App\Models\logs::create([
+                'user_id' => $user->id,
+                'data' => $dataAtual,
+                'entrada' => $horaAtual,
+                'final_almoço' => $endlunch,
+                'saida' => "00:00",
+                "total_horas" => "00:00",
+                "obs" => "Biometria (ESP32)",
+                "created_by" => $user->name,
+                "updated_by" => "Not Updated",
+            ]);
+
+            return response()->json(['sucesso' => true, 'mensagem' => 'Entrada de ' . $user->name . ' registada!'], 200);
+
+        } else {
+            
+            $entrada = Carbon::parse($logDeHoje->entrada);
+            $sai = Carbon::parse($horaAtual);
+            
+            $total = $entrada->diff($sai)->format('%H:%i');
+
+            $logDeHoje->update([
+                'saida' => $horaAtual,
+                'total_horas' => $total,
+                'updated_by' => $user->name,
+            ]);
+
+            return response()->json(['sucesso' => true, 'mensagem' => 'Saída de ' . $user->name . ' registada!'], 200);
+        }
+    }*/
 }

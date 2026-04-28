@@ -137,8 +137,8 @@ class usercontroller extends Controller
             $mqtt = new MqttClient(config('mqtt.host'), (int) config('mqtt.port'), 'enroll_web_client_' . $id);
             $mqtt->connect($settings, true);
 
-            $mqtt->publish('Enroll/UserID', (string)$id, 0);
-            $mqtt->publish('Enroll/Nome', $user->name, 0);
+            $mqtt->publish('Enroll/UserID', (string)$id, 0, false);
+            $mqtt->publish('Enroll/Nome', $user->name, 0, false);
             $mqtt->disconnect();
 
             $timeout = 60;
@@ -169,6 +169,32 @@ class usercontroller extends Controller
             return back()->with('error', 'O tempo limite de 1 minuto foi atingido. O sensor não respondeu.');
         } catch (\Exception $e) {
             return back()->with('error', 'Erro ao comunicar com o Broker: ' . $e->getMessage());
+        }
+    }
+    public function receberStatusEnroll(Request $request)
+    {
+        $userId = $request->input('user_id');
+        $status = $request->input('status');
+
+        if ($userId === null || $status === null) {
+            return response()->json(['erro' => 'Dados incompletos'], 400);
+        }
+
+        $user = \App\Models\User::find($userId);
+
+        if (!$user) {
+            return response()->json(['erro' => 'Utilizador não encontrado'], 404);
+        }
+
+        if ($status == 1) {
+           
+            $user->update([
+                'finger' => 1 
+            ]);
+
+            return response()->json(['sucesso' => true, 'mensagem' => 'Biometria ativa com sucesso!'], 200);
+        } else {
+            return response()->json(['sucesso' => false, 'mensagem' => 'Erro na leitura do dedo'], 200);
         }
     }
 }
