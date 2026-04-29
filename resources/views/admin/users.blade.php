@@ -150,18 +150,18 @@
                                                         </div>
                                                     </div>
                                                     
-                                                    <div class="bg-gray-700/25 px-4 py-3 flex flex-wrap items-center justify-between sm:px-6">
+                                                    <div class="bg-gray-700/25 px-4 py-3 flex flex-wrap items-center {{ $user->finger ? 'justify-between' : 'justify-center' }} sm:px-6">
                                                         
-                                                        <div>
-                                                            @if($user->finger)
-                                                            <form action="{{ route('users.delete_finger', $user->id) }}" method="POST">
-                                                                @csrf
-                                                                <button type="submit" class="text-red-500 hover:text-white border border-red-500 hover:bg-red-600 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2 text-center transition-colors">
-                                                                    Remove Fingerprint
-                                                                </button>
-                                                            </form>
-                                                            @endif
-                                                        </div>
+                                                        @if($user->finger)
+                                                            <div>
+                                                                <form action="{{ route('users.delete_finger', $user->id) }}" method="POST">
+                                                                    @csrf
+                                                                    <x-primary-red-button>
+                                                                        Remove Fingerprint
+                                                                    </x-primary-red-button>
+                                                                </form>
+                                                            </div>
+                                                        @endif
 
                                                         <div class="flex items-center mt-3 sm:mt-0">
                                                             <button type="button" style="cursor: pointer"

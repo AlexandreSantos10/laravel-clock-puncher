@@ -100,6 +100,9 @@
                                 <th scope="col" class="px-6 py-3 font-medium text-gray-100">
                                     Total Time
                                 </th>
+                                <th scope="col" class="px-6 py-3 font-medium text-gray-100">
+                                    Manage
+                                </th>
 
                             </tr>
                         </thead>
@@ -130,6 +133,65 @@
                                     <td class="px-6 py-4 text-gray-100">
                                         {{ $print_time = date('H:i', strtotime($log->total_horas)) }}
                                     </td>
+                                    <td class="flex items-center px-4 py-4 text-gray-100">
+                                        <a href ="/user/looklog/{{ $log->id }}" class="mr-1">
+                                            <x-eye-icon/>
+
+                                        </a>
+
+                                        <a href ="/user/editlog/{{ $log->id }}">
+                                            <x-edit-icon/>
+                                        </a>
+                                        <button command="show-modal" style="cursor: pointer" commandfor="dialog{{ $log->id }}">
+                                            <x-trash-icon/>
+                                        </button>
+                                    </td>
+                                    <el-dialog>
+                                    
+                                            <dialog id="dialog{{ $log->id }}" aria-labelledby="dialog-title{{ $log->id }}"
+                                                class="fixed inset-0 m-0 size-auto max-h-none max-w-none overflow-y-auto bg-transparent p-0 backdrop:bg-transparent">
+                                                <el-dialog-backdrop
+                                                    class="fixed inset-0 bg-gray-900/50 transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in"></el-dialog-backdrop>
+
+                                                <div tabindex="0"
+                                                    class="flex min-h-full items-end justify-center p-4 text-center focus:outline focus:outline-0 sm:items-center sm:p-0">
+                                                    <el-dialog-panel
+                                                        class="relative transform overflow-hidden bg-gray-800 text-left shadow-xl outline outline-1 -outline-offset-1 outline-white/10 transition-all data-[closed]:translate-y-4 data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in sm:my-8 sm:max-w-lg data-[closed]:sm:translate-y-0 data-[closed]:sm:scale-95">
+                                                        <div class="bg-gray-800 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                                                            <div class="sm:flex sm:items-start">
+
+                                                            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                                                                <h3 id="dialog-title"
+                                                                    class="text-base font-semibold text-white">Delete Log
+                                                                </h3>
+                                                                <div class="mt-2">
+                                                                    <p class="text-sm text-gray-400">Are you sure you want
+                                                                        to delete this Log?</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div
+                                                        class="bg-gray-700/25 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 justify-center items-center">
+
+                                                        <form action ="/user/delete/{{ $log->id }}" method="post">
+                                                            @csrf
+                                                            @method('delete')
+                                                            <x-primary-red-button
+                                                                command="close" commandfor="dialog"
+                                                                >Delete</x-primary-red-button>
+
+
+                                                        </form>
+                                                        <x-secondary-red-button type="button"  command="close"
+                                                            commandfor="dialog{{ $log->id }}"
+                                                           >Cancel</x-secondary-red-button>
+
+                                                    </div>
+                                                </el-dialog-panel>
+                                            </div>
+                                        </dialog>
+                                    </el-dialog>
 
 
 

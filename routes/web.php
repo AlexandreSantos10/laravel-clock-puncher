@@ -36,6 +36,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/home/create', [logscontroller::class, 'userlogcreate'])->name('logcreate');
         Route::get('/clockfinish/{logs}', [logscontroller::class, 'userlogup'])->name('clockfinish');
         Route::put('/clockfinishupdate/{logs}', [logscontroller::class, 'userlogupdate'])->name('clockfinishupdate');
+        Route::get('/looklog/{logs}', [logscontroller::class, 'looklog'])->name('userlooklog');
+        Route::get('/editlog/{logs}', [logscontroller::class, 'editlog'])->name('usereditlog');
+        Route::put('/editlog/{logs}/update', [logscontroller::class, 'updatelog'])->name('updateuserlog');
+        Route::delete('/delete/{logs}', [logscontroller::class, 'deletelog'])->name('deleteuserlog');
     });
 
     // --- ROTAS DE ADMINISTRAÇÃO (Admin) ---

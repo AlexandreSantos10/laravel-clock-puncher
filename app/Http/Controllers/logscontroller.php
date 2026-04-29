@@ -11,6 +11,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Lang;
 
 class logscontroller extends Controller
 {
@@ -196,21 +197,46 @@ class logscontroller extends Controller
         }
     }
 
-    public function looklog(Logs $logs)
+    public function looklog($logs)
     {
-        $id = $logs->id;
-        $logs = Logs::findOrFail($id);
+        $logs = \App\Models\logs::findOrFail($logs);
+        
+        if ($logs->user_id !== Auth::user()->id && Auth::user()->tipo !== 'admin') {
+            return redirect()->back()->with('error', 'Unauthorized access');
+        }
 
-        return view("admin/looklog", ["logs" => $logs]);
+        // Devolve a vista consoante o link em que estavas
+        if (request()->is('admin/*')) {
+            return view("admin/looklog", ["logs" => $logs]);
+        } else {
+            return view("user/looklog", ["logs" => $logs]);
+        }
     }
     
-    public function editlog(Logs $logs)
+    public function editlog($logs)
     {
-        $users = User::all();
-        return view("admin/editlog", ["logs" => $logs], ["users" => $users]);
+        $logs = \App\Models\logs::findOrFail($logs);
+
+        if ($logs->user_id !== Auth::user()->id && Auth::user()->tipo !== 'admin') {
+            return redirect()->back()->with('error', 'Unauthorized access');
+        }
+        
+        $users = \App\Models\User::all();
+        
+        
+        if (request()->is('admin/*')) {
+            return view("admin/editlog", ["logs" => $logs, "users" => $users]);
+        } else {
+            return view("user/editlog", ["logs" => $logs, "users" => $users]);
+        }
     }
     public function updatelog(Logs $logs, Request $request)
     {
+        // Verificar se o utilizador é o proprietário do log ou é admin
+        if ($logs->user_id !== Auth::user()->id && Auth::user()->tipo !== 'admin') {
+            return redirect()->back()->with('error', 'Unauthorized access');
+        }
+        
         $data = $request->validate([
             'data' => ['required'],
             'obs' => ['required'],
@@ -260,18 +286,45 @@ class logscontroller extends Controller
                 'updated_by' => $adm,
             ]);
             $logs->update($data);
-            return redirect(route('adminlogs'));
+            
+            // Redireciona consoante a zona do site (admin vs user)
+            if (request()->is('admin/*')) {
+                return redirect()->route('adminlogs');
+            } else {
+                return redirect()->route('userlogs');
+            }
+            
         } else {
-            return view('admin/editlog', ["logs" => $log], ["users" => $user])->with("message", "This user was already registered on this day");
+            
+            // Se der erro de data inválida, também devolvemos à vista correta
+            if (request()->is('admin/*')) {
+                return view('admin/editlog', ["logs" => $logs, "users" => $user])->with("message", "This user was already registered on this day");
+            } else {
+                return view('user/editlog', ["logs" => $logs, "users" => $user])->with("message", "This user was already registered on this day");
+            }
+            
         }
     }
 
 
 
-    public function deletelog(Logs $logs)
+    public function deletelog($logs)
     {
-        $logs->DELETE();
-        return redirect()->route("adminlogs")->with("message", "The log has been sucessfully removed");
+        $logs = \App\Models\logs::findOrFail($logs);
+        
+        // Segurança: Bloqueia se não for admin E não for dono do log
+        if ($logs->user_id !== Auth::user()->id && Auth::user()->tipo !== 'admin') {
+            return redirect()->back()->with('error', 'Unauthorized access');
+        }
+        
+        $logs->delete();
+        
+        // A MÁGICA AQUI: O sistema verifica o link em que estás
+        if (request()->is('admin/*')) {
+            return redirect()->route("adminlogs")->with("message", "The log has been sucessfully removed");
+        } else {
+            return redirect()->route("userlogs")->with("message", "The log has been sucessfully removed");
+        }
     }
 
     public function export(Request $request)
