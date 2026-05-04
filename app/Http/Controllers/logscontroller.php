@@ -9,6 +9,7 @@ use \App\Models\User;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
+use App\Models\AdminLog;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Lang;
@@ -287,7 +288,6 @@ class logscontroller extends Controller
             ]);
             $logs->update($data);
             
-            // Redireciona consoante a zona do site (admin vs user)
             if (request()->is('admin/*')) {
                 return redirect()->route('adminlogs');
             } else {
@@ -296,7 +296,6 @@ class logscontroller extends Controller
             
         } else {
             
-            // Se der erro de data inválida, também devolvemos à vista correta
             if (request()->is('admin/*')) {
                 return view('admin/editlog', ["logs" => $logs, "users" => $user])->with("message", "This user was already registered on this day");
             } else {
@@ -307,7 +306,36 @@ class logscontroller extends Controller
     }
 
 
+public function adminLogsAudit(Request $request)
+    {
+        $users = \App\Models\User::all();
+        $query = \App\Models\AdminLog::with('autor');
 
+        if ($request->filled('name')) {
+            $targetUser = \App\Models\User::query()->where('name', $request->name)->first();
+            
+            if ($targetUser) {
+                $query->where('dados_antigos->user_id', $targetUser->id);
+            }
+        }
+
+        if ($request->filled('month')) {
+            
+            $mesComTraco = $request->month; 
+            
+            $mesComBarra = str_replace('-', '/', $request->month); 
+
+            $query->where(function($q) use ($mesComTraco, $mesComBarra) {
+                $q->where('dados_antigos->data', 'like', $mesComTraco . '%')
+                  ->orWhere('dados_antigos->data', 'like', $mesComBarra . '%');
+            });
+        }
+
+        
+        $admin_logs = $query->orderBy('created_at', 'desc')->paginate(10);
+        
+        return view('admin/admin_logs', compact('admin_logs', 'users'));
+    }
     public function deletelog($logs)
     {
         $logs = \App\Models\logs::findOrFail($logs);

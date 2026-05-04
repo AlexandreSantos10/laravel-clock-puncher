@@ -52,6 +52,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/looklog/{logs}', [logscontroller::class, 'looklog']);
         Route::get('/editlog/{logs}', [logscontroller::class, 'editlog']);
         Route::put('/editlog/{logs}/update', [logscontroller::class, 'updatelog'])->name('updatelog');
+
+        Route::get('/admin-logs', [logscontroller::class, 'adminLogsAudit'])->name('admin.adminlogs');
         
         // Exportações
         Route::get('/export', [logscontroller::class, 'export'])->name('export');

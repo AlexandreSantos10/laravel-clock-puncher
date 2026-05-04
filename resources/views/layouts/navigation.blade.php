@@ -24,6 +24,9 @@
                         <x-nav-link :href="route('adminlogs')" :active="request()->routeIs('adminlogs')">
                             {{ __('Manage Logs') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('admin.adminlogs')" :active="request()->routeIs('admin.adminlogs')">
+                     {{ __('Admin Logs') }}
+                        </x-nav-link>
                         <x-nav-link :href="route('userlist')" :active="request()->routeIs('userlist')">
                             {{ __(' Manage Users') }}
                         </x-nav-link>
