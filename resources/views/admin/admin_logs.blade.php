@@ -40,7 +40,7 @@
                         </form>
                     </div>
 
-                   
+
                 </div>
 
                 <div
@@ -73,12 +73,19 @@
                                         {{ $log->original_date }}
                                     </td>
 
+
                                     <td class="px-6 py-4">
-                                        <span
-                                            class="{{ $log->acao == 'DELETE' ? 'text-red-400' : 'text-green-400' }} font-bold">
-                                            {{ $log->acao }}
-                                        </span>
+                                        @if ($log->acao == 'DELETE')
+                                            <span class="text-red-400 font-bold">{{ $log->acao }}</span>
+                                        @elseif($log->acao == 'EXIT')
+                                            <span class="text-blue-400 font-bold">{{ $log->acao }}</span>
+                                        @elseif($log->acao == 'ENTRY')
+                                            <span class="text-emerald-400 font-bold">{{ $log->acao }}</span>
+                                        @else
+                                            <span class="text-green-400 font-bold">{{ $log->acao }}</span>
+                                        @endif
                                     </td>
+
 
                                     <td class="px-6 py-4 text-gray-100">
                                         <button type="button"
@@ -110,13 +117,39 @@
                                                                     <div class="mt-2 text-left space-y-2">
                                                                         @if (is_array($log->dados_antigos))
                                                                             @foreach ($log->dados_antigos as $key => $value)
-                                                                                @if (!in_array($key, ['id', 'created_at', 'updated_at', 'user_id']))
+                                                                                @if (!in_array($key, ['id', 'created_at', 'updated_at', 'user_id', 'is_clock_out', 'tipo_acao_custom']))
+                                                                                    @php
+                                                                                        $printValue = $value;
+                                                                                        if ($value) {
+                                                                                            try {
+                                                                                                if ($key == 'data') {
+                                                                                                    // Força os dias a ficar SEMPRE YYYY-MM-DD
+                                                                                                    $printValue = \Carbon\Carbon::parse(
+                                                                                                        $value,
+                                                                                                    )->format('Y-m-d');
+                                                                                                } elseif (
+                                                                                                    in_array($key, [
+                                                                                                        'entrada',
+                                                                                                        'saida',
+                                                                                                        'final_almoço',
+                                                                                                        'total_horas',
+                                                                                                    ])
+                                                                                                ) {
+                                                                                                    // Força as horas a ficar SEMPRE 00:00
+                                                                                                    $printValue = \Carbon\Carbon::parse(
+                                                                                                        $value,
+                                                                                                    )->format('H:i');
+                                                                                                }
+                                                                                            } catch (\Exception $e) {
+                                                                                            }
+                                                                                        }
+                                                                                    @endphp
                                                                                     <div
                                                                                         class="flex border-b border-gray-700 pb-1">
                                                                                         <span
                                                                                             class="w-1/3 font-semibold text-gray-400 capitalize">{{ str_replace('_', ' ', $key) }}:</span>
                                                                                         <span
-                                                                                            class="text-gray-100">{{ $value ?: '---' }}</span>
+                                                                                            class="text-gray-100">{{ $printValue ?: '---' }}</span>
                                                                                     </div>
                                                                                 @endif
                                                                             @endforeach
@@ -177,13 +210,44 @@
                                                                         <div class="mt-2 text-left space-y-2">
                                                                             @if (is_array($log->dados_novos))
                                                                                 @foreach ($log->dados_novos as $key => $value)
-                                                                                    @if (!in_array($key, ['id', 'created_at', 'updated_at', 'user_id']))
+                                                                                    @if (!in_array($key, ['id', 'created_at', 'updated_at', 'user_id', 'is_clock_out', 'tipo_acao_custom']))
+                                                                                        @php
+                                                                                            $printValue = $value;
+                                                                                            if ($value) {
+                                                                                                try {
+                                                                                                    if (
+                                                                                                        $key == 'data'
+                                                                                                    ) {
+                                                                                                        $printValue = \Carbon\Carbon::parse(
+                                                                                                            $value,
+                                                                                                        )->format(
+                                                                                                            'Y-m-d',
+                                                                                                        );
+                                                                                                    } elseif (
+                                                                                                        in_array($key, [
+                                                                                                            'entrada',
+                                                                                                            'saida',
+                                                                                                            'final_almoço',
+                                                                                                            'total_horas',
+                                                                                                        ])
+                                                                                                    ) {
+                                                                                                        $printValue = \Carbon\Carbon::parse(
+                                                                                                            $value,
+                                                                                                        )->format(
+                                                                                                            'H:i',
+                                                                                                        );
+                                                                                                    }
+                                                                                                } catch (\Exception $e) {
+                                                                                                    // Prevenção de falhas
+                                                                                                }
+                                                                                            }
+                                                                                        @endphp
                                                                                         <div
                                                                                             class="flex border-b border-gray-700 pb-1">
                                                                                             <span
                                                                                                 class="w-1/3 font-semibold text-gray-400 capitalize">{{ str_replace('_', ' ', $key) }}:</span>
                                                                                             <span
-                                                                                                class="text-yellow-400 font-medium">{{ $value ?: '---' }}</span>
+                                                                                                class="text-yellow-400 font-medium">{{ $printValue ?: '---' }}</span>
                                                                                         </div>
                                                                                     @endif
                                                                                 @endforeach

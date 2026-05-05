@@ -102,12 +102,15 @@ class logscontroller extends Controller
         $id = Auth::user()->id;
         $user = User::findOrFail($id);
         $name = $user->name;
-        $data = ([
+        
+        $data = [
             'saida' => $saida,
             "total_horas" => $total,
             "updated_by" => $name,
-        ]);
+        ];
 
+        // A MENSAGEM SECRETA (Agora não vai dar erro!)
+        $logs->tipo_acao_custom = 'EXIT'; 
 
         $logs->update($data);
         return view("user/clockfinished", ['logs' => $logs]);
@@ -233,7 +236,6 @@ class logscontroller extends Controller
     }
     public function updatelog(Logs $logs, Request $request)
     {
-        // Verificar se o utilizador é o proprietário do log ou é admin
         if ($logs->user_id !== Auth::user()->id && Auth::user()->tipo !== 'admin') {
             return redirect()->back()->with('error', 'Unauthorized access');
         }
@@ -260,48 +262,62 @@ class logscontroller extends Controller
             $datevalid = 0;
         }
 
-
-
         if ($datevalid == 0) {
-
-
-            $endlunch = Carbon::parse($user->inicio_almoco);
-            $aux = $endlunch->hour;
-            $aux = $aux + 1;
-            $endlunch->hour = $aux;
+            
+    $endlunch = Carbon::parse($user->inicio_almoco)->addHour()->format('H:i');
+            
             $entry = Carbon::parse($data["entrada"]);
             $exit = Carbon::parse($data["saida"]);
             $adm = Auth::user()->name;
             $exitstr = $exit->format("H:i");
+            
             if ($exitstr != "00:00") {
-                $aux = $exit->hour;
-                $aux = $aux - 1;
+                $aux = $exit->hour - 1;
                 $exit->hour = $aux;
-
                 $total = $entry->diff($exit)->format('%H:%i');
-            } else
+            } else {
                 $total = "00:00:00";
-            $data = $data + ([
+            }
+                
+            $dadosPreparados = $data + ([
                 'total_horas' => $total,
                 'final_almoço' => $endlunch,
                 'updated_by' => $adm,
             ]);
-            $logs->update($data);
-            
-            if (request()->is('admin/*')) {
+
+            // ==========================================
+            // A MAGIA DA BIFURCAÇÃO COMEÇA AQUI
+            // ==========================================
+            if (Auth::user()->tipo === 'admin') {
+                
+                // É Admin: Atualiza na hora!
+                $logs->update($dadosPreparados);
                 return redirect()->route('adminlogs');
+                
             } else {
-                return redirect()->route('userlogs');
+                
+                // É User: Cria pedido de aprovação!
+                // (Precisamos de uma tabela para guardar isto)
+                \App\Models\LogApproval::create([
+                    'log_id' => $logs->id,
+                    'user_id' => Auth::user()->id,
+                    'dados_pedidos' => json_encode($dadosPreparados),
+                    'status' => 'pending'
+                ]);
+
+                // Disparar Email para os Admins (Vamos criar isto a seguir)
+                // $admins = \App\Models\User::where('tipo', 'admin')->get();
+                // \Illuminate\Support\Facades\Mail::to($admins)->send(new \App\Mail\LogEditRequestMail($logs, $dadosPreparados));
+
+                return redirect()->route('userlogs')->with('message', 'O teu pedido de alteração foi enviado aos administradores para aprovação.');
             }
-            
+
         } else {
-            
             if (request()->is('admin/*')) {
                 return view('admin/editlog', ["logs" => $logs, "users" => $user])->with("message", "This user was already registered on this day");
             } else {
                 return view('user/editlog', ["logs" => $logs, "users" => $user])->with("message", "This user was already registered on this day");
             }
-            
         }
     }
 
