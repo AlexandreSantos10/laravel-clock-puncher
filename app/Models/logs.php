@@ -12,7 +12,9 @@ class logs extends Model
     return $this->belongsTo(User::class);
 }
 
-public $tipo_acao_custom = null;
+    public $is_clock_out = false;
+    public $autor_personalizado = null; 
+    public $acao_personalizada = null;  
     protected $table = 'logs';
 
 

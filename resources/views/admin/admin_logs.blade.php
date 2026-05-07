@@ -40,7 +40,6 @@
                         </form>
                     </div>
 
-
                 </div>
 
                 <div
@@ -73,19 +72,19 @@
                                         {{ $log->original_date }}
                                     </td>
 
-
                                     <td class="px-6 py-4">
                                         @if ($log->acao == 'DELETE')
                                             <span class="text-red-400 font-bold">{{ $log->acao }}</span>
                                         @elseif($log->acao == 'EXIT')
                                             <span class="text-blue-400 font-bold">{{ $log->acao }}</span>
+                                        @elseif($log->acao == 'APPROVED')
+                                            <span class="text-fuchsia-400 font-bold">{{ $log->acao }}</span>
                                         @elseif($log->acao == 'ENTRY')
                                             <span class="text-emerald-400 font-bold">{{ $log->acao }}</span>
                                         @else
                                             <span class="text-green-400 font-bold">{{ $log->acao }}</span>
                                         @endif
                                     </td>
-
 
                                     <td class="px-6 py-4 text-gray-100">
                                         <button type="button"
@@ -116,14 +115,31 @@
 
                                                                     <div class="mt-2 text-left space-y-2">
                                                                         @if (is_array($log->dados_antigos))
-                                                                            @foreach ($log->dados_antigos as $key => $value)
-                                                                                @if (!in_array($key, ['id', 'created_at', 'updated_at', 'user_id', 'is_clock_out', 'tipo_acao_custom']))
+                                                                            @php
+                                                                                // A MAGIA ESTÁ AQUI: A ordem em que puseres os campos nesta lista
+                                                                                // é EXATAMENTE a ordem em que eles vão aparecer no ecrã!
+                                                                                $ordemCampos = [
+                                                                                    'data' => 'Date',
+                                                                                    'entrada' => 'Entry',
+                                                                                    'saida' => 'Exit',
+                                                                                    'final_almoço' => 'Lunch End',
+                                                                                    'total_horas' => 'Total Hours',
+                                                                                    'obs' => 'Observations',
+                                                                                    'created_by' => 'Created By',
+                                                                                    'updated_by' => 'Updated By',
+                                                                                ];
+                                                                            @endphp
+
+                                                                            @foreach ($ordemCampos as $key => $displayKey)
+                                                                                @if (array_key_exists($key, $log->dados_antigos))
                                                                                     @php
+                                                                                        $value =
+                                                                                            $log->dados_antigos[$key];
                                                                                         $printValue = $value;
+
                                                                                         if ($value) {
                                                                                             try {
                                                                                                 if ($key == 'data') {
-                                                                                                    // Força os dias a ficar SEMPRE YYYY-MM-DD
                                                                                                     $printValue = \Carbon\Carbon::parse(
                                                                                                         $value,
                                                                                                     )->format('Y-m-d');
@@ -135,7 +151,6 @@
                                                                                                         'total_horas',
                                                                                                     ])
                                                                                                 ) {
-                                                                                                    // Força as horas a ficar SEMPRE 00:00
                                                                                                     $printValue = \Carbon\Carbon::parse(
                                                                                                         $value,
                                                                                                     )->format('H:i');
@@ -147,7 +162,7 @@
                                                                                     <div
                                                                                         class="flex border-b border-gray-700 pb-1">
                                                                                         <span
-                                                                                            class="w-1/3 font-semibold text-gray-400 capitalize">{{ str_replace('_', ' ', $key) }}:</span>
+                                                                                            class="w-1/3 font-semibold text-gray-400 capitalize">{{ $displayKey }}:</span>
                                                                                         <span
                                                                                             class="text-gray-100">{{ $printValue ?: '---' }}</span>
                                                                                     </div>
@@ -158,7 +173,6 @@
                                                                             </p>
                                                                         @endif
                                                                     </div>
-
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -179,7 +193,7 @@
                                         </el-dialog>
                                     </td>
 
-                                    <td class="px-6 py-4 text-gray-100">
+                                    <td class="text-gray-100 px-10 py-4">
                                         @if ($log->dados_novos)
                                             <button type="button"
                                                 onclick="document.getElementById('dialog-new-{{ $log->id }}').showModal()"
@@ -209,10 +223,27 @@
 
                                                                         <div class="mt-2 text-left space-y-2">
                                                                             @if (is_array($log->dados_novos))
-                                                                                @foreach ($log->dados_novos as $key => $value)
-                                                                                    @if (!in_array($key, ['id', 'created_at', 'updated_at', 'user_id', 'is_clock_out', 'tipo_acao_custom']))
+                                                                                @php
+                                                                                    // Mesma lista para garantir que ambos os modais ficam iguaizinhos
+                                                                                    $ordemCampos = [
+                                                                                        'data' => 'Date',
+                                                                                        'entrada' => 'Entry',
+                                                                                        'saida' => 'Exit',
+                                                                                        'final_almoço' => 'Lunch End',
+                                                                                        'total_horas' => 'Total Hours',
+                                                                                        'obs' => 'Observations',
+                                                                                        'created_by' => 'Created By',
+                                                                                        'updated_by' => 'Updated By',
+                                                                                    ];
+                                                                                @endphp
+
+                                                                                @foreach ($ordemCampos as $key => $displayKey)
+                                                                                    @if (array_key_exists($key, $log->dados_novos))
                                                                                         @php
+                                                                                            $value =
+                                                                                                $log->dados_novos[$key];
                                                                                             $printValue = $value;
+
                                                                                             if ($value) {
                                                                                                 try {
                                                                                                     if (
@@ -238,14 +269,13 @@
                                                                                                         );
                                                                                                     }
                                                                                                 } catch (\Exception $e) {
-                                                                                                    // Prevenção de falhas
                                                                                                 }
                                                                                             }
                                                                                         @endphp
                                                                                         <div
                                                                                             class="flex border-b border-gray-700 pb-1">
                                                                                             <span
-                                                                                                class="w-1/3 font-semibold text-gray-400 capitalize">{{ str_replace('_', ' ', $key) }}:</span>
+                                                                                                class="w-1/3 font-semibold text-gray-400 capitalize">{{ $displayKey }}:</span>
                                                                                             <span
                                                                                                 class="text-yellow-400 font-medium">{{ $printValue ?: '---' }}</span>
                                                                                         </div>

@@ -66,6 +66,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/createuserview', [usercontroller::class, 'createuserview'])->name('createuserview');
         Route::post('/usercreate', [usercontroller::class, 'createuser'])->name('createuser');
         Route::put('/change/{user}', [usercontroller::class, 'changeusertype'])->name('changeusertype');
+
+        Route::get('/approve-log/{id}', [App\Http\Controllers\logscontroller::class, 'approveLog'])->name('admin.approve_log');
+        Route::get('/reject-log/{id}', [App\Http\Controllers\logscontroller::class, 'rejectLog'])->name('admin.reject_log');
     });
 
     // Biometria (Enroll)

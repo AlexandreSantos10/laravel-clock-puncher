@@ -94,25 +94,40 @@ class logscontroller extends Controller
     }
     public function userlogupdate(Logs $logs)
     {
-        $entrada = Carbon::parse($logs->entrada);
-        $saida = Carbon::now()->format('H:i');
-        $sai = Carbon::parse($saida);
-        $total = $entrada->diff($sai)->format('%H:%i');
-
         $id = Auth::user()->id;
         $user = User::findOrFail($id);
-        $name = $user->name;
         
+        $entry = Carbon::parse($logs->entrada);
+        $saida = Carbon::now()->format('H:i');
+        $exit = Carbon::parse($saida);
+
+        $inicio_almoco = Carbon::parse($user->inicio_almoco);
+        $fim_almoco = $inicio_almoco->copy()->addHour(); 
+
+        $totalMinutos = $entry->diffInMinutes($exit);
+
+        if ($entry->lessThan($fim_almoco) && $exit->greaterThan($inicio_almoco)) {
+            $inicio_sobreposicao = $entry->greaterThan($inicio_almoco) ? $entry : $inicio_almoco;
+            $fim_sobreposicao = $exit->lessThan($fim_almoco) ? $exit : $fim_almoco;
+            $minutosDesconto = $inicio_sobreposicao->diffInMinutes($fim_sobreposicao);
+            $totalMinutos -= $minutosDesconto;
+        }
+
+        if ($totalMinutos < 0) { $totalMinutos = 0; }
+        
+        $horas = floor($totalMinutos / 60);
+        $minutos = $totalMinutos % 60;
+        $total = sprintf('%02d:%02d', $horas, $minutos);
+
         $data = [
             'saida' => $saida,
             "total_horas" => $total,
-            "updated_by" => $name,
+            "updated_by" => $user->name,
         ];
 
-        // A MENSAGEM SECRETA (Agora não vai dar erro!)
-        $logs->tipo_acao_custom = 'EXIT'; 
-
+        $logs->tipo_acao_custom = 'EXIT';
         $logs->update($data);
+        
         return view("user/clockfinished", ['logs' => $logs]);
     }
 
@@ -141,47 +156,57 @@ class logscontroller extends Controller
     public function createlogview()
     {
         $users = User::all();
-        return view("admin/createlogview",compact('users'));
+        return view("admin/createlogview", compact('users'));
     }
-     public function createlog(Request $request)
+    public function createlog(Request $request)
     {
-
         $data = $request->validate([
             'user_id' => ['required'],
             'data' => ['required'],
             'entrada' => ['required'],
             'saida' => ['required'],
             'obs' => ['required'],
-
         ]);
+        
         $id = $request->user_id;
         $user = User::findOrFail($id);
         $users = User::all();
         $logss = Logs::with('User')->where("user_id", $id)->get();
-        $datevalid = 0; 
-        
-    
+        $datevalid = 0;
+
         foreach ($logss as $log) {
             if ($log->data == $data["data"]) {
                 $datevalid = $datevalid + 1;
             }
         }
 
-
-
         if ($datevalid == 0) {
-            $endlunch = Carbon::parse($user->inicio_almoco);
-            $aux = $endlunch->hour;
-            $aux = $aux + 1;
-            $endlunch->hour = $aux;
             $entry = Carbon::parse($data["entrada"]);
             $exit = Carbon::parse($data["saida"]);
-            $aux = $exit->hour;
-            $aux = $aux - 1;
-            $exit->hour = $aux;
-            $total = $entry->diff($exit)->format('%H:%i');
+
+            $inicio_almoco = Carbon::parse($user->inicio_almoco);
+            $fim_almoco = $inicio_almoco->copy()->addHour(); 
+            $endlunch = $fim_almoco->format('H:i'); 
+
+            $totalMinutos = $entry->diffInMinutes($exit);
+
+            // Lógica à prova de bala do almoço
+            if ($entry->lessThan($fim_almoco) && $exit->greaterThan($inicio_almoco)) {
+                $inicio_sobreposicao = $entry->greaterThan($inicio_almoco) ? $entry : $inicio_almoco;
+                $fim_sobreposicao = $exit->lessThan($fim_almoco) ? $exit : $fim_almoco;
+                $minutosDesconto = $inicio_sobreposicao->diffInMinutes($fim_sobreposicao);
+                $totalMinutos -= $minutosDesconto;
+            }
+
+            if ($totalMinutos < 0) { $totalMinutos = 0; }
+            
+            $horas = floor($totalMinutos / 60);
+            $minutos = $totalMinutos % 60;
+            $total = sprintf('%02d:%02d', $horas, $minutos);
+
             $adm = Auth::user()->name;
-            $logs = Logs::create([
+            
+            Logs::create([
                 'user_id' => $request->user_id,
                 'data' => $request->data,
                 'entrada' => $request->entrada,
@@ -193,8 +218,6 @@ class logscontroller extends Controller
                 'updated_by' => "Not Updated",
             ]);
 
-
-
             return redirect(route('adminlogs', absolute: false));
         } else {
             return view("admin/createlogview", ["users" => $users])->with("message", "This user was already registered on this day");
@@ -204,19 +227,18 @@ class logscontroller extends Controller
     public function looklog($logs)
     {
         $logs = \App\Models\logs::findOrFail($logs);
-        
+
         if ($logs->user_id !== Auth::user()->id && Auth::user()->tipo !== 'admin') {
             return redirect()->back()->with('error', 'Unauthorized access');
         }
 
-        // Devolve a vista consoante o link em que estavas
         if (request()->is('admin/*')) {
             return view("admin/looklog", ["logs" => $logs]);
         } else {
             return view("user/looklog", ["logs" => $logs]);
         }
     }
-    
+
     public function editlog($logs)
     {
         $logs = \App\Models\logs::findOrFail($logs);
@@ -224,10 +246,10 @@ class logscontroller extends Controller
         if ($logs->user_id !== Auth::user()->id && Auth::user()->tipo !== 'admin') {
             return redirect()->back()->with('error', 'Unauthorized access');
         }
-        
+
         $users = \App\Models\User::all();
-        
-        
+
+
         if (request()->is('admin/*')) {
             return view("admin/editlog", ["logs" => $logs, "users" => $users]);
         } else {
@@ -239,7 +261,7 @@ class logscontroller extends Controller
         if ($logs->user_id !== Auth::user()->id && Auth::user()->tipo !== 'admin') {
             return redirect()->back()->with('error', 'Unauthorized access');
         }
-        
+
         $data = $request->validate([
             'data' => ['required'],
             'obs' => ['required'],
@@ -263,55 +285,65 @@ class logscontroller extends Controller
         }
 
         if ($datevalid == 0) {
-            
-    $endlunch = Carbon::parse($user->inicio_almoco)->addHour()->format('H:i');
-            
             $entry = Carbon::parse($data["entrada"]);
             $exit = Carbon::parse($data["saida"]);
+
+            $inicio_almoco = Carbon::parse($user->inicio_almoco);
+            $fim_almoco = $inicio_almoco->copy()->addHour(); 
+            $endlunch = $fim_almoco->format('H:i'); 
+
             $adm = Auth::user()->name;
-            $exitstr = $exit->format("H:i");
-            
-            if ($exitstr != "00:00") {
-                $aux = $exit->hour - 1;
-                $exit->hour = $aux;
-                $total = $entry->diff($exit)->format('%H:%i');
+
+            if ($exit->format("H:i") != "00:00") {
+                $totalMinutos = $entry->diffInMinutes($exit);
+
+                // A MAGIA ACONTECE AQUI:
+                if ($entry->lessThan($fim_almoco) && $exit->greaterThan($inicio_almoco)) {
+                    // Descobre a que horas começou a coincidir (o que for mais tarde: a entrada ou o inicio do almoço)
+                    $inicio_sobreposicao = $entry->greaterThan($inicio_almoco) ? $entry : $inicio_almoco;
+                    
+                    // Descobre a que horas deixou de coincidir (o que for mais cedo: a saída ou o fim do almoço)
+                    $fim_sobreposicao = $exit->lessThan($fim_almoco) ? $exit : $fim_almoco;
+                    
+                    // Subtrai APENAS os minutos em que os horários se cruzaram
+                    $minutosDesconto = $inicio_sobreposicao->diffInMinutes($fim_sobreposicao);
+                    $totalMinutos -= $minutosDesconto;
+                }
+
+                if ($totalMinutos < 0) {
+                    $totalMinutos = 0;
+                }
+
+                $horas = floor($totalMinutos / 60);
+                $minutos = $totalMinutos % 60;
+                $total = sprintf('%02d:%02d', $horas, $minutos);
             } else {
                 $total = "00:00:00";
             }
-                
-            $dadosPreparados = $data + ([
+            
+            $dadosPreparados = $data + [
                 'total_horas' => $total,
                 'final_almoço' => $endlunch,
                 'updated_by' => $adm,
-            ]);
+            ];
 
-            // ==========================================
-            // A MAGIA DA BIFURCAÇÃO COMEÇA AQUI
-            // ==========================================
             if (Auth::user()->tipo === 'admin') {
-                
-                // É Admin: Atualiza na hora!
                 $logs->update($dadosPreparados);
-                return redirect()->route('adminlogs');
-                
+                return redirect()->route('adminlogs')->with("message", "Log atualizado com sucesso!");
             } else {
-                
-                // É User: Cria pedido de aprovação!
-                // (Precisamos de uma tabela para guardar isto)
-                \App\Models\LogApproval::create([
+                $approval = \App\Models\LogApproval::create([
                     'log_id' => $logs->id,
                     'user_id' => Auth::user()->id,
-                    'dados_pedidos' => json_encode($dadosPreparados),
+                    'dados_novos' => $dadosPreparados,
                     'status' => 'pending'
                 ]);
-
-                // Disparar Email para os Admins (Vamos criar isto a seguir)
-                // $admins = \App\Models\User::where('tipo', 'admin')->get();
-                // \Illuminate\Support\Facades\Mail::to($admins)->send(new \App\Mail\LogEditRequestMail($logs, $dadosPreparados));
-
-                return redirect()->route('userlogs')->with('message', 'O teu pedido de alteração foi enviado aos administradores para aprovação.');
+                $admins = User::query()->where('tipo', 'admin')->get();
+                foreach ($admins as $admin) {
+                    \Illuminate\Support\Facades\Mail::to($admin->email)
+                        ->send(new \App\Mail\LogEditRequestMail(Auth::user(), $logs, $dadosPreparados, $approval->id));
+                }
+                return redirect()->route('userlogs')->with('message', 'O teu pedido de alteração foi enviado para aprovação dos administradores.');
             }
-
         } else {
             if (request()->is('admin/*')) {
                 return view('admin/editlog', ["logs" => $logs, "users" => $user])->with("message", "This user was already registered on this day");
@@ -322,48 +354,46 @@ class logscontroller extends Controller
     }
 
 
-public function adminLogsAudit(Request $request)
+    public function adminLogsAudit(Request $request)
     {
         $users = \App\Models\User::all();
         $query = \App\Models\AdminLog::with('autor');
 
         if ($request->filled('name')) {
             $targetUser = \App\Models\User::query()->where('name', $request->name)->first();
-            
+
             if ($targetUser) {
                 $query->where('dados_antigos->user_id', $targetUser->id);
             }
         }
 
         if ($request->filled('month')) {
-            
-            $mesComTraco = $request->month; 
-            
-            $mesComBarra = str_replace('-', '/', $request->month); 
 
-            $query->where(function($q) use ($mesComTraco, $mesComBarra) {
+            $mesComTraco = $request->month;
+
+            $mesComBarra = str_replace('-', '/', $request->month);
+
+            $query->where(function ($q) use ($mesComTraco, $mesComBarra) {
                 $q->where('dados_antigos->data', 'like', $mesComTraco . '%')
-                  ->orWhere('dados_antigos->data', 'like', $mesComBarra . '%');
+                    ->orWhere('dados_antigos->data', 'like', $mesComBarra . '%');
             });
         }
 
-        
+
         $admin_logs = $query->orderBy('created_at', 'desc')->paginate(10);
-        
+
         return view('admin/admin_logs', compact('admin_logs', 'users'));
     }
     public function deletelog($logs)
     {
         $logs = \App\Models\logs::findOrFail($logs);
-        
-        // Segurança: Bloqueia se não for admin E não for dono do log
+
         if ($logs->user_id !== Auth::user()->id && Auth::user()->tipo !== 'admin') {
             return redirect()->back()->with('error', 'Unauthorized access');
         }
-        
+
         $logs->delete();
-        
-        // A MÁGICA AQUI: O sistema verifica o link em que estás
+
         if (request()->is('admin/*')) {
             return redirect()->route("adminlogs")->with("message", "The log has been sucessfully removed");
         } else {
@@ -493,63 +523,57 @@ public function adminLogsAudit(Request $request)
         $writer->save('php://output');
         exit;
     }
-    /*
-    public function receberPontoDoEsp32(Request $request)
+        
+   public function approveLog($id)
     {
-       
-        $userId = $request->input('user_id');
-
-        if ($userId === null) {
-            return response()->json(['erro' => 'UserID não recebido'], 400);
+        if (Auth::user()->tipo !== 'admin') {
+            return redirect()->route('userlogs')->with('error', 'Não tens permissão para aprovar logs.');
         }
 
-        $user = \App\Models\User::find($userId);
+        $approval = \App\Models\LogApproval::findOrFail($id);
 
-        if (!$user) {
-            return response()->json(['erro' => 'Utilizador não existe na base de dados'], 404);
+        if ($approval->status !== 'pending') {
+            return redirect()->route('adminlogs')->with('error', 'Este pedido já foi processado anteriormente.');
         }
 
-        $dataAtual = Carbon::now()->format('Y/m/d');
-        $horaAtual = Carbon::now()->format('H:i');
-
-        $logDeHoje = \App\Models\logs::where('user_id', $user->id)
-                                     ->where('data', $dataAtual)
-                                     ->first();
-
-        if (!$logDeHoje) {
-           
-            $endlunch = Carbon::parse($user->inicio_almoco);
-            $aux = $endlunch->hour + 1;
-            $endlunch->hour = $aux;
-
-            \App\Models\logs::create([
-                'user_id' => $user->id,
-                'data' => $dataAtual,
-                'entrada' => $horaAtual,
-                'final_almoço' => $endlunch,
-                'saida' => "00:00",
-                "total_horas" => "00:00",
-                "obs" => "Biometria (ESP32)",
-                "created_by" => $user->name,
-                "updated_by" => "Not Updated",
-            ]);
-
-            return response()->json(['sucesso' => true, 'mensagem' => 'Entrada de ' . $user->name . ' registada!'], 200);
-
-        } else {
+        if ($approval->created_at->copy()->addMinutes(60)->isPast()) {
             
-            $entrada = Carbon::parse($logDeHoje->entrada);
-            $sai = Carbon::parse($horaAtual);
-            
-            $total = $entrada->diff($sai)->format('%H:%i');
-
-            $logDeHoje->update([
-                'saida' => $horaAtual,
-                'total_horas' => $total,
-                'updated_by' => $user->name,
-            ]);
-
-            return response()->json(['sucesso' => true, 'mensagem' => 'Saída de ' . $user->name . ' registada!'], 200);
+            $approval->update(['status' => 'rejected']); 
+            return redirect()->route('adminlogs')->with('error', 'Link expirado! O pedido foi feito há mais de 1 hora e foi cancelado.');
         }
-    }*/
+
+        $logOriginal = \App\Models\logs::findOrFail($approval->log_id);
+        
+        $logOriginal->autor_personalizado = $approval->user_id;
+        $logOriginal->acao_personalizada = 'APPROVED';
+
+        $logOriginal->update($approval->dados_novos);
+        $approval->update(['status' => 'approved']);
+
+        return redirect()->route('adminlogs')->with('message', 'Alteração de log aprovada com sucesso!');
+    }
+
+   public function rejectLog($id)
+    {
+        if (Auth::user()->tipo !== 'admin') {
+            return redirect()->route('userlogs')->with('error', 'Não tens permissão para rejeitar logs.');
+        }
+
+        $approval = \App\Models\LogApproval::findOrFail($id);
+
+        if ($approval->status !== 'pending') {
+            return redirect()->route('adminlogs')->with('error', 'Este pedido já foi processado anteriormente.');
+        }
+
+        
+        if ($approval->created_at->copy()->addMinutes(60)->isPast()) {
+            $approval->update(['status' => 'rejected']);
+            return redirect()->route('adminlogs')->with('error', 'Link expirado! O pedido foi feito há mais de 1 hora e foi cancelado.');
+        }
+
+        $approval->update(['status' => 'rejected']);
+
+        return redirect()->route('adminlogs')->with('message', 'Pedido de alteração rejeitado.');
+    }
+
 }

@@ -10,12 +10,13 @@ class LogsObserver
     
     public function updated(logs $logs)
     {
-        // Se a variável tiver 'EXIT', usa isso. Se estiver vazia, foi edição normal (EDIT).
-        $acao = $logs->tipo_acao_custom ?? 'EDIT';
+        $autorId = $logs->autor_personalizado ?? \Illuminate\Support\Facades\Auth::id() ?? 1;
+        
+        $acao = $logs->acao_personalizada ?? ($logs->is_clock_out ? 'EXIT' : 'EDIT');
 
         \App\Models\AdminLog::create([
             'log_id'       => $logs->id,
-            'user_id'      => \Illuminate\Support\Facades\Auth::id() ?? 1,
+            'user_id'      => $autorId,
             'acao'         => $acao,
             'dados_antigos' => $logs->getOriginal(), 
             'dados_novos'   => $logs->getAttributes(),

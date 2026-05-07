@@ -19,11 +19,15 @@ class usercontroller extends Controller
 {
     public function userlist(Request $request)
     {
-        if ($request->name == "") {
-            $users = User::paginate(10);
+        if ($request->input('name') == "") {
+            $users = User::query()->paginate(10);
         } else {
-            $users = User::where("name", "LIKE", "$request->name%")->get();
+           $users = User::query()
+                ->where("name", "LIKE", "%" . $request->input('name') . "%")
+                ->paginate(10)
+                ->withQueryString();
         }
+        
         return view('admin/users', compact('users'));
     }
 
@@ -149,7 +153,7 @@ class usercontroller extends Controller
             return response()->json(['erro' => 'Dados incompletos'], 400);
         }
 
-        $user = \App\Models\User::find($userId);
+        $user = \App\Models\User::findOrFail($userId);
 
         if (!$user) {
             return response()->json(['erro' => 'Utilizador não encontrado'], 404);
@@ -204,14 +208,14 @@ class usercontroller extends Controller
             return response()->json(['erro' => 'Dados incompletos'], 400);
         }
 
-        $user = \App\Models\User::find($userId);
+        $user = \App\Models\User::findOrFail($userId);
 
         if (!$user) {
             return response()->json(['erro' => 'Utilizador não encontrado'], 404);
         }
 
         if ($status == 1) {
-            // Sucesso! Atualiza a base de dados dizendo que ele já não tem dedo registado
+          
             $user->update([
                 'finger' => 0 
             ]);
