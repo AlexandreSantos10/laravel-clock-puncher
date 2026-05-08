@@ -328,6 +328,7 @@ class logscontroller extends Controller
             ];
 
             if (Auth::user()->tipo === 'admin') {
+                $logs->acao_personalizada = 'EDIT';
                 $logs->update($dadosPreparados);
                 return redirect()->route('adminlogs')->with("message", "Log atualizado com sucesso!");
             } else {

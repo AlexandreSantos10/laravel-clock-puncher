@@ -15,6 +15,7 @@ class logs extends Model
     public $is_clock_out = false;
     public $autor_personalizado = null; 
     public $acao_personalizada = null;  
+    public $tipo_acao_custom = null;
     protected $table = 'logs';
 
 
