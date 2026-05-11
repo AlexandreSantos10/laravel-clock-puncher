@@ -9,7 +9,8 @@ use App\Http\Controllers\logscontroller;
 Route::get('/', function () {
     return view('welcome');
 });
-//Route::post('/esp32/ponto', [logscontroller::class, 'receberPontoDoEsp32']);
+
+Route::post('/esp32/ponto', [logscontroller::class, 'receberPontoDoEsp32']);
 Route::post('/esp32/enroll-status', [usercontroller::class, 'receberStatusEnroll']);
 
 Route::post('/esp32/delete-finger-status', [usercontroller::class, 'receberStatusDeleteFinger']);

@@ -96,13 +96,13 @@ class logscontroller extends Controller
     {
         $id = Auth::user()->id;
         $user = User::findOrFail($id);
-        
+
         $entry = Carbon::parse($logs->entrada);
         $saida = Carbon::now()->format('H:i');
         $exit = Carbon::parse($saida);
 
         $inicio_almoco = Carbon::parse($user->inicio_almoco);
-        $fim_almoco = $inicio_almoco->copy()->addHour(); 
+        $fim_almoco = $inicio_almoco->copy()->addHour();
 
         $totalMinutos = $entry->diffInMinutes($exit);
 
@@ -113,8 +113,10 @@ class logscontroller extends Controller
             $totalMinutos -= $minutosDesconto;
         }
 
-        if ($totalMinutos < 0) { $totalMinutos = 0; }
-        
+        if ($totalMinutos < 0) {
+            $totalMinutos = 0;
+        }
+
         $horas = floor($totalMinutos / 60);
         $minutos = $totalMinutos % 60;
         $total = sprintf('%02d:%02d', $horas, $minutos);
@@ -127,7 +129,7 @@ class logscontroller extends Controller
 
         $logs->tipo_acao_custom = 'EXIT';
         $logs->update($data);
-        
+
         return view("user/clockfinished", ['logs' => $logs]);
     }
 
@@ -167,7 +169,7 @@ class logscontroller extends Controller
             'saida' => ['required'],
             'obs' => ['required'],
         ]);
-        
+
         $id = $request->user_id;
         $user = User::findOrFail($id);
         $users = User::all();
@@ -185,8 +187,8 @@ class logscontroller extends Controller
             $exit = Carbon::parse($data["saida"]);
 
             $inicio_almoco = Carbon::parse($user->inicio_almoco);
-            $fim_almoco = $inicio_almoco->copy()->addHour(); 
-            $endlunch = $fim_almoco->format('H:i'); 
+            $fim_almoco = $inicio_almoco->copy()->addHour();
+            $endlunch = $fim_almoco->format('H:i');
 
             $totalMinutos = $entry->diffInMinutes($exit);
 
@@ -198,14 +200,16 @@ class logscontroller extends Controller
                 $totalMinutos -= $minutosDesconto;
             }
 
-            if ($totalMinutos < 0) { $totalMinutos = 0; }
-            
+            if ($totalMinutos < 0) {
+                $totalMinutos = 0;
+            }
+
             $horas = floor($totalMinutos / 60);
             $minutos = $totalMinutos % 60;
             $total = sprintf('%02d:%02d', $horas, $minutos);
 
             $adm = Auth::user()->name;
-            
+
             Logs::create([
                 'user_id' => $request->user_id,
                 'data' => $request->data,
@@ -289,8 +293,8 @@ class logscontroller extends Controller
             $exit = Carbon::parse($data["saida"]);
 
             $inicio_almoco = Carbon::parse($user->inicio_almoco);
-            $fim_almoco = $inicio_almoco->copy()->addHour(); 
-            $endlunch = $fim_almoco->format('H:i'); 
+            $fim_almoco = $inicio_almoco->copy()->addHour();
+            $endlunch = $fim_almoco->format('H:i');
 
             $adm = Auth::user()->name;
 
@@ -301,10 +305,10 @@ class logscontroller extends Controller
                 if ($entry->lessThan($fim_almoco) && $exit->greaterThan($inicio_almoco)) {
                     // Descobre a que horas começou a coincidir (o que for mais tarde: a entrada ou o inicio do almoço)
                     $inicio_sobreposicao = $entry->greaterThan($inicio_almoco) ? $entry : $inicio_almoco;
-                    
+
                     // Descobre a que horas deixou de coincidir (o que for mais cedo: a saída ou o fim do almoço)
                     $fim_sobreposicao = $exit->lessThan($fim_almoco) ? $exit : $fim_almoco;
-                    
+
                     // Subtrai APENAS os minutos em que os horários se cruzaram
                     $minutosDesconto = $inicio_sobreposicao->diffInMinutes($fim_sobreposicao);
                     $totalMinutos -= $minutosDesconto;
@@ -320,7 +324,7 @@ class logscontroller extends Controller
             } else {
                 $total = "00:00:00";
             }
-            
+
             $dadosPreparados = $data + [
                 'total_horas' => $total,
                 'final_almoço' => $endlunch,
@@ -524,8 +528,8 @@ class logscontroller extends Controller
         $writer->save('php://output');
         exit;
     }
-        
-   public function approveLog($id)
+
+    public function approveLog($id)
     {
         if (Auth::user()->tipo !== 'admin') {
             return redirect()->route('userlogs')->with('error', 'Não tens permissão para aprovar logs.');
@@ -538,13 +542,13 @@ class logscontroller extends Controller
         }
 
         if ($approval->created_at->copy()->addMinutes(60)->isPast()) {
-            
-            $approval->update(['status' => 'rejected']); 
+
+            $approval->update(['status' => 'rejected']);
             return redirect()->route('adminlogs')->with('error', 'Link expirado! O pedido foi feito há mais de 1 hora e foi cancelado.');
         }
 
         $logOriginal = \App\Models\logs::findOrFail($approval->log_id);
-        
+
         $logOriginal->autor_personalizado = $approval->user_id;
         $logOriginal->acao_personalizada = 'APPROVED';
 
@@ -554,7 +558,7 @@ class logscontroller extends Controller
         return redirect()->route('adminlogs')->with('message', 'Alteração de log aprovada com sucesso!');
     }
 
-   public function rejectLog($id)
+    public function rejectLog($id)
     {
         if (Auth::user()->tipo !== 'admin') {
             return redirect()->route('userlogs')->with('error', 'Não tens permissão para rejeitar logs.');
@@ -566,7 +570,7 @@ class logscontroller extends Controller
             return redirect()->route('adminlogs')->with('error', 'Este pedido já foi processado anteriormente.');
         }
 
-        
+
         if ($approval->created_at->copy()->addMinutes(60)->isPast()) {
             $approval->update(['status' => 'rejected']);
             return redirect()->route('adminlogs')->with('error', 'Link expirado! O pedido foi feito há mais de 1 hora e foi cancelado.');
@@ -576,5 +580,91 @@ class logscontroller extends Controller
 
         return redirect()->route('adminlogs')->with('message', 'Pedido de alteração rejeitado.');
     }
+    public function receberPontoDoEsp32(Request $request)
+{
+    try {
+        $userId = $request->user_id;
+        $user = \App\Models\User::findOrFail($userId);
+        
+        
+        $hoje = \Carbon\Carbon::now()->format('Y-m-d');
+        $agora = \Carbon\Carbon::now()->format('H:i');
 
+    
+      $logHoje = \App\Models\Logs::where('user_id', '=', $userId, 'and')
+                           ->where('data', '=', $hoje, 'and')
+                           ->first();
+    
+        if (!$logHoje) {
+            $endlunch = \Carbon\Carbon::parse($user->inicio_almoco)->addHour();
+
+            $newLog = \App\Models\logs::create([
+                'user_id' => $userId,
+                'data' => $hoje,
+                'entrada' => $agora,
+                'final_almoço' => $endlunch->format('H:i'),
+                'saida' => "00:00",
+                'total_horas' => "00:00",
+                'obs' => "Automatic Log",
+                'created_by' => "ESP32 System",
+                'updated_by' => "Not Updated",
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Entrada registada para ' . $user->name,
+                'hora' => $agora
+            ]);
+        }
+
+        
+        if ($logHoje->saida == "00:00" || $logHoje->saida == "00:00:00") {
+            $entry = \Carbon\Carbon::parse($logHoje->entrada);
+            $exit = \Carbon\Carbon::parse($agora);
+            $inicio_almoco = \Carbon\Carbon::parse($user->inicio_almoco);
+            $fim_almoco = $inicio_almoco->copy()->addHour(); 
+
+            $totalMinutos = $entry->diffInMinutes($exit);
+
+            
+            if ($entry->lessThan($fim_almoco) && $exit->greaterThan($inicio_almoco)) {
+                $inicio_sobreposicao = $entry->greaterThan($inicio_almoco) ? $entry : $inicio_almoco;
+                $fim_sobreposicao = $exit->lessThan($fim_almoco) ? $exit : $fim_almoco;
+                $minutosDesconto = $inicio_sobreposicao->diffInMinutes($fim_sobreposicao);
+                $totalMinutos -= $minutosDesconto;
+            }
+
+            $totalMinutos = max(0, $totalMinutos);
+            $horas = floor($totalMinutos / 60);
+            $minutos = $totalMinutos % 60;
+            $totalFormatado = sprintf('%02d:%02d', $horas, $minutos);
+
+            $logHoje->tipo_acao_custom = 'EXIT';
+            $logHoje->update([
+                'saida' => $agora,
+                'total_horas' => $totalFormatado,
+                'updated_by' => "ESP32 System",
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Saída registada para ' . $user->name,
+                'total' => $totalFormatado
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Utilizador já picou a saída hoje.'
+        ], 400);
+
+    } catch (\Exception $e) {
+     
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'line' => $e->getLine()
+        ], 500);
+    }
+}
 }
