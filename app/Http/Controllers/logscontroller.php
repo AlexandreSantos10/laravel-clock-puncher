@@ -6,10 +6,11 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use \App\Models\logs;
 use \App\Models\User;
+use \App\Models\LogApproval;
+use \App\Models\AdminLog;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
-use App\Models\AdminLog;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Lang;
@@ -65,7 +66,7 @@ class logscontroller extends Controller
 
         $id = Auth::user()->id;
         $user = User::findOrFail($id);
-        $data = Carbon::now()->format('Y/m/d');
+        $data = Carbon::now()->format('Y-m-d');
         $entrada = Carbon::now()->format('H:i');
         $endlunch = Carbon::parse($user->inicio_almoco);
         $aux = $endlunch->hour;
@@ -192,7 +193,6 @@ class logscontroller extends Controller
 
             $totalMinutos = $entry->diffInMinutes($exit);
 
-            // Lógica à prova de bala do almoço
             if ($entry->lessThan($fim_almoco) && $exit->greaterThan($inicio_almoco)) {
                 $inicio_sobreposicao = $entry->greaterThan($inicio_almoco) ? $entry : $inicio_almoco;
                 $fim_sobreposicao = $exit->lessThan($fim_almoco) ? $exit : $fim_almoco;
@@ -245,13 +245,13 @@ class logscontroller extends Controller
 
     public function editlog($logs)
     {
-        $logs = \App\Models\logs::findOrFail($logs);
+        $logs = logs::findOrFail($logs);
 
         if ($logs->user_id !== Auth::user()->id && Auth::user()->tipo !== 'admin') {
             return redirect()->back()->with('error', 'Unauthorized access');
         }
 
-        $users = \App\Models\User::all();
+        $users = User::all();
 
 
         if (request()->is('admin/*')) {
@@ -301,15 +301,12 @@ class logscontroller extends Controller
             if ($exit->format("H:i") != "00:00") {
                 $totalMinutos = $entry->diffInMinutes($exit);
 
-                // A MAGIA ACONTECE AQUI:
-                if ($entry->lessThan($fim_almoco) && $exit->greaterThan($inicio_almoco)) {
-                    // Descobre a que horas começou a coincidir (o que for mais tarde: a entrada ou o inicio do almoço)
-                    $inicio_sobreposicao = $entry->greaterThan($inicio_almoco) ? $entry : $inicio_almoco;
+               if ($entry->lessThan($fim_almoco) && $exit->greaterThan($inicio_almoco)) {
+                   $inicio_sobreposicao = $entry->greaterThan($inicio_almoco) ? $entry : $inicio_almoco;
 
-                    // Descobre a que horas deixou de coincidir (o que for mais cedo: a saída ou o fim do almoço)
-                    $fim_sobreposicao = $exit->lessThan($fim_almoco) ? $exit : $fim_almoco;
+                   $fim_sobreposicao = $exit->lessThan($fim_almoco) ? $exit : $fim_almoco;
 
-                    // Subtrai APENAS os minutos em que os horários se cruzaram
+                   
                     $minutosDesconto = $inicio_sobreposicao->diffInMinutes($fim_sobreposicao);
                     $totalMinutos -= $minutosDesconto;
                 }
@@ -336,7 +333,7 @@ class logscontroller extends Controller
                 $logs->update($dadosPreparados);
                 return redirect()->route('adminlogs')->with("message", "Log atualizado com sucesso!");
             } else {
-                $approval = \App\Models\LogApproval::create([
+                $approval = LogApproval::create([
                     'log_id' => $logs->id,
                     'user_id' => Auth::user()->id,
                     'dados_novos' => $dadosPreparados,
@@ -361,11 +358,11 @@ class logscontroller extends Controller
 
     public function adminLogsAudit(Request $request)
     {
-        $users = \App\Models\User::all();
-        $query = \App\Models\AdminLog::with('autor');
+        $users = User::all();
+        $query = AdminLog::with('autor');
 
         if ($request->filled('name')) {
-            $targetUser = \App\Models\User::query()->where('name', $request->name)->first();
+            $targetUser = User::query()->where('name', $request->name)->first();
 
             if ($targetUser) {
                 $query->where('dados_antigos->user_id', $targetUser->id);
@@ -391,7 +388,7 @@ class logscontroller extends Controller
     }
     public function deletelog($logs)
     {
-        $logs = \App\Models\logs::findOrFail($logs);
+        $logs = logs::findOrFail($logs);
 
         if ($logs->user_id !== Auth::user()->id && Auth::user()->tipo !== 'admin') {
             return redirect()->back()->with('error', 'Unauthorized access');
@@ -535,7 +532,7 @@ class logscontroller extends Controller
             return redirect()->route('userlogs')->with('error', 'Não tens permissão para aprovar logs.');
         }
 
-        $approval = \App\Models\LogApproval::findOrFail($id);
+        $approval = LogApproval::findOrFail($id);
 
         if ($approval->status !== 'pending') {
             return redirect()->route('adminlogs')->with('error', 'Este pedido já foi processado anteriormente.');
@@ -547,7 +544,7 @@ class logscontroller extends Controller
             return redirect()->route('adminlogs')->with('error', 'Link expirado! O pedido foi feito há mais de 1 hora e foi cancelado.');
         }
 
-        $logOriginal = \App\Models\logs::findOrFail($approval->log_id);
+        $logOriginal = logs::findOrFail($approval->log_id);
 
         $logOriginal->autor_personalizado = $approval->user_id;
         $logOriginal->acao_personalizada = 'APPROVED';
@@ -564,7 +561,7 @@ class logscontroller extends Controller
             return redirect()->route('userlogs')->with('error', 'Não tens permissão para rejeitar logs.');
         }
 
-        $approval = \App\Models\LogApproval::findOrFail($id);
+        $approval = LogApproval::findOrFail($id);
 
         if ($approval->status !== 'pending') {
             return redirect()->route('adminlogs')->with('error', 'Este pedido já foi processado anteriormente.');
@@ -584,21 +581,19 @@ class logscontroller extends Controller
 {
     try {
         $userId = $request->user_id;
-        $user = \App\Models\User::findOrFail($userId);
-        
-        
+        $user = User::findOrFail($userId);
+
         $hoje = \Carbon\Carbon::now()->format('Y-m-d');
         $agora = \Carbon\Carbon::now()->format('H:i');
 
-    
-      $logHoje = \App\Models\Logs::where('user_id', '=', $userId, 'and')
-                           ->where('data', '=', $hoje, 'and')
-                           ->first();
-    
+        $logHoje = \App\Models\Logs::where('user_id', '=', $userId, 'and')
+            ->where('data', '=', $hoje)
+            ->first();
+
         if (!$logHoje) {
             $endlunch = \Carbon\Carbon::parse($user->inicio_almoco)->addHour();
 
-            $newLog = \App\Models\logs::create([
+            Logs::create([
                 'user_id' => $userId,
                 'data' => $hoje,
                 'entrada' => $agora,
@@ -617,16 +612,15 @@ class logscontroller extends Controller
             ]);
         }
 
-        
+       
         if ($logHoje->saida == "00:00" || $logHoje->saida == "00:00:00") {
             $entry = \Carbon\Carbon::parse($logHoje->entrada);
             $exit = \Carbon\Carbon::parse($agora);
             $inicio_almoco = \Carbon\Carbon::parse($user->inicio_almoco);
-            $fim_almoco = $inicio_almoco->copy()->addHour(); 
+            $fim_almoco = $inicio_almoco->copy()->addHour();
 
             $totalMinutos = $entry->diffInMinutes($exit);
 
-            
             if ($entry->lessThan($fim_almoco) && $exit->greaterThan($inicio_almoco)) {
                 $inicio_sobreposicao = $entry->greaterThan($inicio_almoco) ? $entry : $inicio_almoco;
                 $fim_sobreposicao = $exit->lessThan($fim_almoco) ? $exit : $fim_almoco;
@@ -639,7 +633,6 @@ class logscontroller extends Controller
             $minutos = $totalMinutos % 60;
             $totalFormatado = sprintf('%02d:%02d', $horas, $minutos);
 
-            $logHoje->tipo_acao_custom = 'EXIT';
             $logHoje->update([
                 'saida' => $agora,
                 'total_horas' => $totalFormatado,
@@ -653,17 +646,28 @@ class logscontroller extends Controller
             ]);
         }
 
+       
+        AdminLog::create([
+            'log_id'        => $logHoje->id,
+            'user_id'       => $userId, 
+            'acao'          => 'Duplicate Exit',
+            'dados_antigos' => $logHoje->toArray(), 
+            'dados_novos'   => [
+                'tentativa_hora' => $agora,
+                'mensagem'       => 'O utilizador tentou picar a saída novamente após já ter um registo finalizado.',
+                'ip_origem'      => $request->ip()
+            ]
+        ]);
+
         return response()->json([
             'status' => 'error',
-            'message' => 'Utilizador já picou a saída hoje.'
+            'message' => 'Já existe uma saída registada para hoje.'
         ], 400);
 
     } catch (\Exception $e) {
-     
         return response()->json([
             'status' => 'error',
             'message' => $e->getMessage(),
-            'line' => $e->getLine()
         ], 500);
     }
 }

@@ -75,10 +75,12 @@
                                     <td class="px-6 py-4">
                                         @if ($log->acao == 'DELETE')
                                             <span class="text-red-400 font-bold">{{ $log->acao }}</span>
-                                        @elseif($log->acao == 'EXIT')
-                                            <span class="text-blue-400 font-bold">{{ $log->acao }}</span>
                                         @elseif($log->acao == 'APPROVED')
-                                            <span class="text-fuchsia-400 font-bold">{{ $log->acao }}</span>
+                                            <span class="text-blue-400 font-bold">{{ $log->acao }}</span>
+                                        @elseif($log->acao == 'Duplicate Exit')
+                                            <span class="text-orange-400 font-bold">{{ $log->acao }}</span>
+                                        @elseif($log->acao == 'REJECTED')
+                                            <span class="text-red-500 font-bold">{{ $log->acao }}</span>
                                         @elseif($log->acao == 'ENTRY')
                                             <span class="text-emerald-400 font-bold">{{ $log->acao }}</span>
                                         @else
