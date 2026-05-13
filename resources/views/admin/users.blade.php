@@ -143,25 +143,29 @@
                                                                 </h3>
                                                                 <div class="mt-2">
                                                                     <p class="text-sm text-gray-400">
-                                                                        You can switch the user role or remove their fingerprint access.
+                                                                        You can switch the user role or remove their
+                                                                        fingerprint access.
                                                                     </p>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    
-                                                    <div class="bg-gray-700/25 px-4 py-3 flex flex-wrap items-center {{ $user->finger ? 'justify-between' : 'justify-center' }} sm:px-6">
-                                                        
-                                                        @if($user->finger)
-                                                            <div>
-                                                                <form action="{{ route('users.delete_finger', $user->id) }}" method="POST">
+
+                                                    <div
+                                                        class="bg-gray-700/25 px-4 py-3 flex flex-wrap items-center {{ $user->finger ? 'justify-between' : 'justify-center' }} sm:px-6">
+
+                                                        <div id="remove-finger-container-{{ $user->id }}">
+                                                            @if ($user->finger)
+                                                                <form
+                                                                    onsubmit="removeFinger(event, {{ $user->id }})">
                                                                     @csrf
-                                                                    <x-primary-red-button>
+                                                                    <x-primary-red-button type="submit"
+                                                                        id="btn-remove-{{ $user->id }}">
                                                                         Remove Fingerprint
                                                                     </x-primary-red-button>
                                                                 </form>
-                                                            </div>
-                                                        @endif
+                                                            @endif
+                                                        </div>
 
                                                         <div class="flex items-center mt-3 sm:mt-0">
                                                             <button type="button" style="cursor: pointer"
@@ -169,13 +173,15 @@
                                                                 command="close"
                                                                 commandfor="dialog{{ $user->id }}">Cancel</button>
 
-                                                            <form action="{{ route('changeusertype', $user->id) }}" method="POST" class="inline-block">
+                                                            <form action="{{ route('changeusertype', $user->id) }}"
+                                                                method="POST" class="inline-block">
                                                                 @csrf
                                                                 @method('PUT')
-                                                                <x-primary-app-button type="submit" commandfor="dialog">Switch Role</x-primary-app-button>
+                                                                <x-primary-app-button type="submit"
+                                                                    commandfor="dialog">Switch
+                                                                    Role</x-primary-app-button>
                                                             </form>
                                                         </div>
-
                                                     </div>
                                                 </el-dialog-panel>
                                             </div>
@@ -202,3 +208,76 @@
 
 
 </x-app-layout>
+
+
+<script>
+// FUNÇÃO PARA REMOVER
+function removeFinger(event, userId) {
+    event.preventDefault();
+    if (!confirm('Deseja mesmo remover esta biometria?')) return;
+
+    const btn = document.getElementById(`btn-remove-${userId}`);
+    const cell = document.getElementById(`finger-cell-${userId}`);
+    const container = document.getElementById(`remove-finger-container-${userId}`);
+
+    btn.disabled = true;
+    btn.innerText = "Removendo...";
+
+    fetch(`/admin/users/delete-finger/${userId}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // 1. Atualiza a tabela principal (lá atrás do modal)
+            cell.innerHTML = `
+                <button type="button" onclick="startEnroll(${userId})" id="btn-enroll-${userId}" class="text-red-400 hover:text-red-300 font-medium cursor-pointer">
+                    Enroll Finger
+                </button>
+            `;
+            // 2. Limpa o botão dentro do modal
+            container.innerHTML = ''; 
+        } else {
+            alert("Erro: " + data.message);
+            btn.disabled = false;
+            btn.innerText = "Remove Fingerprint";
+        }
+    });
+}
+
+// FUNÇÃO PARA ENROLL (POLLING)
+function startEnroll(userId) {
+    const btn = document.getElementById(`btn-enroll-${userId}`);
+    const cell = document.getElementById(`finger-cell-${userId}`);
+
+    btn.disabled = true;
+    btn.innerText = "Aguardando dedo...";
+    btn.classList.add('animate-pulse', 'text-gray-400');
+
+    fetch(`/admin/users/enroll/${userId}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(() => {
+        const checkInterval = setInterval(() => {
+            fetch(`/admin/users/${userId}/finger-status`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.has_finger) {
+                        clearInterval(checkInterval);
+                        cell.innerHTML = '<span class="badge bg-success text-yellow-400">✔ Active</span>';
+                        // Opcional: Recarregar para atualizar os botões dentro dos modais
+                        // window.location.reload(); 
+                    }
+                });
+        }, 2000);
+    });
+}
+</script>
