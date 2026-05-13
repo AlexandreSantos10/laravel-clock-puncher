@@ -5,13 +5,18 @@ use Illuminate\Database\Eloquent\Model;
 class AdminLog extends Model
 {
     protected $table = 'admin_logs';
-    protected $fillable = ['log_id', 'user_id', 'acao', 'dados_antigos', 'dados_novos'];
+   protected $fillable = ['log_id', 'user_id', 'admin_id', 'acao', 'dados_antigos', 'dados_novos']; 
+
+   
 
     protected $casts = [
         'dados_antigos' => 'json', 
         'dados_novos'   => 'json',
     ];
-
+public function decisor()
+{
+    return $this->belongsTo(User::class, 'admin_id');
+}
     public function autor()
     {
         return $this->belongsTo(User::class, 'user_id');

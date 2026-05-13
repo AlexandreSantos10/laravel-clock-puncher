@@ -73,19 +73,28 @@
                                     </td>
 
                                     <td class="px-6 py-4">
-                                        @if ($log->acao == 'DELETE')
-                                            <span class="text-red-400 font-bold">{{ $log->acao }}</span>
-                                        @elseif($log->acao == 'APPROVED')
-                                            <span class="text-blue-400 font-bold">{{ $log->acao }}</span>
-                                        @elseif($log->acao == 'Duplicate Exit')
-                                            <span class="text-orange-400 font-bold">{{ $log->acao }}</span>
-                                        @elseif($log->acao == 'REJECTED')
-                                            <span class="text-red-500 font-bold">{{ $log->acao }}</span>
-                                        @elseif($log->acao == 'ENTRY')
-                                            <span class="text-emerald-400 font-bold">{{ $log->acao }}</span>
-                                        @else
-                                            <span class="text-green-400 font-bold">{{ $log->acao }}</span>
-                                        @endif
+                                        <div class="flex flex-col">
+                                            {{-- Estado da Ação --}}
+                                            @if ($log->acao == 'DELETE')
+                                                <span class="text-red-400 font-bold">{{ $log->acao }}</span>
+                                            @elseif($log->acao == 'APPROVED')
+                                                <span class="text-blue-400 font-bold">{{ $log->acao }}</span>
+                                            @elseif($log->acao == 'AFTER HOURS')
+                                                <span class="text-yellow-400 font-bold">{{ $log->acao }}</span>
+                                            @elseif($log->acao == 'REJECTED')
+                                                <span class="text-red-500 font-bold">{{ $log->acao }}</span>
+                                            @elseif($log->acao == 'ENTRY')
+                                                <span class="text-emerald-400 font-bold">{{ $log->acao }}</span>
+                                            @else
+                                                <span class="text-green-400 font-bold">{{ $log->acao }}</span>
+                                            @endif
+
+                                            @if ($log->admin_id)
+                                                <span class="text-[10px] text-gray-500 italic leading-tight mt-0.5">
+                                                    by {{ $log->decisor->name ?? 'Unknown' }}
+                                                </span>
+                                            @endif
+                                        </div>
                                     </td>
 
                                     <td class="px-6 py-4 text-gray-100">
@@ -112,14 +121,12 @@
                                                                     class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
                                                                     <h3 id="dialog-title-old-{{ $log->id }}"
                                                                         class="text-lg font-semibold text-white mb-4 border-b border-gray-600 pb-2">
-                                                                        Original Data (Before)
+                                                                        Original Data
                                                                     </h3>
 
                                                                     <div class="mt-2 text-left space-y-2">
                                                                         @if (is_array($log->dados_antigos))
                                                                             @php
-                                                                                // A MAGIA ESTÁ AQUI: A ordem em que puseres os campos nesta lista
-                                                                                // é EXATAMENTE a ordem em que eles vão aparecer no ecrã!
                                                                                 $ordemCampos = [
                                                                                     'data' => 'Date',
                                                                                     'entrada' => 'Entry',
@@ -220,13 +227,22 @@
                                                                         class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
                                                                         <h3 id="dialog-title-new-{{ $log->id }}"
                                                                             class="text-lg font-semibold text-white mb-4 border-b border-gray-600 pb-2">
-                                                                            New Data (After)
+                                                                            New Data (Alterations Only)
                                                                         </h3>
 
                                                                         <div class="mt-2 text-left space-y-2">
                                                                             @if (is_array($log->dados_novos))
                                                                                 @php
-                                                                                    // Mesma lista para garantir que ambos os modais ficam iguaizinhos
+                                                                                    // Preparamos os dados antigos para comparação
+                                                                                    $antigos = is_array(
+                                                                                        $log->dados_antigos,
+                                                                                    )
+                                                                                        ? $log->dados_antigos
+                                                                                        : json_decode(
+                                                                                                $log->dados_antigos,
+                                                                                                true,
+                                                                                            ) ?? [];
+
                                                                                     $ordemCampos = [
                                                                                         'data' => 'Date',
                                                                                         'entrada' => 'Entry',
@@ -237,58 +253,137 @@
                                                                                         'created_by' => 'Created By',
                                                                                         'updated_by' => 'Updated By',
                                                                                     ];
+
+                                                                                    $temAlteracao = false;
                                                                                 @endphp
 
                                                                                 @foreach ($ordemCampos as $key => $displayKey)
                                                                                     @if (array_key_exists($key, $log->dados_novos))
                                                                                         @php
-                                                                                            $value =
+                                                                                            $newValue =
                                                                                                 $log->dados_novos[$key];
-                                                                                            $printValue = $value;
+                                                                                            $oldValue =
+                                                                                                $antigos[$key] ?? null;
 
-                                                                                            if ($value) {
-                                                                                                try {
-                                                                                                    if (
-                                                                                                        $key == 'data'
-                                                                                                    ) {
-                                                                                                        $printValue = \Carbon\Carbon::parse(
-                                                                                                            $value,
-                                                                                                        )->format(
-                                                                                                            'Y-m-d',
-                                                                                                        );
-                                                                                                    } elseif (
-                                                                                                        in_array($key, [
-                                                                                                            'entrada',
-                                                                                                            'saida',
-                                                                                                            'final_almoço',
-                                                                                                            'total_horas',
-                                                                                                        ])
-                                                                                                    ) {
-                                                                                                        $printValue = \Carbon\Carbon::parse(
-                                                                                                            $value,
+                                                                                            // 1. Normalização para comparação
+                                                                                            $checkNew = trim(
+                                                                                                (string) $newValue,
+                                                                                            );
+                                                                                            $checkOld = trim(
+                                                                                                (string) $oldValue,
+                                                                                            );
+
+                                                                                            // 2. Se for um campo de tempo, comparamos apenas HH:MM
+                                                                                            $camposTempo = [
+                                                                                                'entrada',
+                                                                                                'saida',
+                                                                                                'final_almoço',
+                                                                                                'total_horas',
+                                                                                            ];
+
+                                                                                            if (
+                                                                                                in_array(
+                                                                                                    $key,
+                                                                                                    $camposTempo,
+                                                                                                )
+                                                                                            ) {
+                                                                                                // Extrai apenas os primeiros 5 caracteres (ex: "14:00") para evitar erro com segundos
+                                                                                                $checkNew = substr(
+                                                                                                    $checkNew,
+                                                                                                    0,
+                                                                                                    5,
+                                                                                                );
+                                                                                                $checkOld = substr(
+                                                                                                    $checkOld,
+                                                                                                    0,
+                                                                                                    5,
+                                                                                                );
+                                                                                            }
+
+                                                                                            $isDifferent =
+                                                                                                $checkNew !== $checkOld;
+                                                                                        @endphp
+
+                                                                                        @if ($isDifferent)
+                                                                                            @php
+                                                                                                $temAlteracao = true;
+                                                                                                $printValue = $newValue;
+
+                                                                                                // Formatação para exibição no modal
+                                                                                                if ($newValue) {
+                                                                                                    try {
+                                                                                                        if (
+                                                                                                            $key ==
+                                                                                                            'data'
+                                                                                                        ) {
+                                                                                                            $printValue = \Carbon\Carbon::parse(
+                                                                                                                $newValue,
+                                                                                                            )->format(
+                                                                                                                'Y-m-d',
+                                                                                                            );
+                                                                                                        } elseif (
+                                                                                                            in_array(
+                                                                                                                $key,
+                                                                                                                $camposTempo,
+                                                                                                            )
+                                                                                                        ) {
+                                                                                                            $printValue = \Carbon\Carbon::parse(
+                                                                                                                $newValue,
+                                                                                                            )->format(
+                                                                                                                'H:i',
+                                                                                                            );
+                                                                                                        }
+                                                                                                    } catch (\Exception $e) {
+                                                                                                    }
+                                                                                                }
+
+                                                                                                // Formatação do valor antigo para o "Previous"
+                                                                                                $printOld = $oldValue;
+                                                                                                if (
+                                                                                                    $oldValue &&
+                                                                                                    in_array(
+                                                                                                        $key,
+                                                                                                        $camposTempo,
+                                                                                                    )
+                                                                                                ) {
+                                                                                                    try {
+                                                                                                        $printOld = \Carbon\Carbon::parse(
+                                                                                                            $oldValue,
                                                                                                         )->format(
                                                                                                             'H:i',
                                                                                                         );
+                                                                                                    } catch (\Exception $e) {
                                                                                                     }
-                                                                                                } catch (\Exception $e) {
                                                                                                 }
-                                                                                            }
-                                                                                        @endphp
-                                                                                        <div
-                                                                                            class="flex border-b border-gray-700 pb-1">
-                                                                                            <span
-                                                                                                class="w-1/3 font-semibold text-gray-400 capitalize">{{ $displayKey }}:</span>
-                                                                                            <span
-                                                                                                class="text-yellow-400 font-medium">{{ $printValue ?: '---' }}</span>
-                                                                                        </div>
+                                                                                            @endphp
+
+                                                                                            <div
+                                                                                                class="flex border-b border-gray-700 py-2">
+                                                                                                <span
+                                                                                                    class="w-1/3 font-semibold text-gray-400 capitalize">{{ $displayKey }}:</span>
+                                                                                                <div
+                                                                                                    class="flex flex-col">
+                                                                                                    <span
+                                                                                                        class="text-yellow-400 font-medium">{{ $printValue ?: '---' }}</span>
+                                                                                                    <span
+                                                                                                        class="text-[10px] text-gray-500 italic">Previous:
+                                                                                                        {{ $printOld ?: 'N/A' }}</span>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        @endif
                                                                                     @endif
                                                                                 @endforeach
+
+                                                                                @if (!$temAlteracao)
+                                                                                    <p class="text-gray-500 italic">No
+                                                                                        field values were changed
+                                                                                        (Status update only).</p>
+                                                                                @endif
                                                                             @else
                                                                                 <p class="text-gray-400">No data
                                                                                     available.</p>
                                                                             @endif
                                                                         </div>
-
                                                                     </div>
                                                                 </div>
                                                             </div>

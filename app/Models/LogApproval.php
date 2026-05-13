@@ -5,10 +5,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class LogApproval extends Model
 {
-    
+
     protected $fillable = ['log_id', 'user_id', 'dados_novos', 'status'];
 
-    
     protected $casts = [
         'dados_novos' => 'array'
     ];
@@ -22,4 +21,7 @@ class LogApproval extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+
+    
 }

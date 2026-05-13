@@ -12,7 +12,7 @@ class LogsObserver
     {
         $acao = $logs->acao_personalizada ?? $logs->tipo_acao_custom ?? ($logs->is_clock_out ? 'EXIT' : 'EDIT');
 
-       if ($acao === 'EXIT') {
+       if ($acao === 'EXIT' || $acao === 'APPROVED') {
             return;
         }
 
