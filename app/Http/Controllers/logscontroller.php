@@ -527,87 +527,94 @@ class logscontroller extends Controller
     }
 
     public function approveLog($id)
-{
-    if (Auth::user()->tipo !== 'admin') {
-        return redirect()->route('userlogs')->with('error', 'Não tens permissão.');
+    {
+        if (Auth::user()->tipo !== 'admin') {
+            return redirect()->route('userlogs')->with('error', 'Não tens permissão.');
+        }
+
+        $approval = LogApproval::findOrFail($id);
+
+        if ($approval->status !== 'pending') {
+            return redirect()->route('adminlogs')->with('error', 'Este pedido já foi processado (Aceite ou Recusado) anteriormente.');
+        }
+
+        $logOriginal = logs::findOrFail($approval->log_id);
+
+         $dadosAntigos = $logOriginal->getAttributes();
+        $dadosNovosParaGuardar = is_array($approval->dados_novos)
+            ? $approval->dados_novos
+            : json_decode($approval->dados_novos, true);
+
+        $logOriginal->withoutEvents(function () use ($logOriginal, $dadosNovosParaGuardar) {
+            $logOriginal->update($dadosNovosParaGuardar);
+        });
+
+        $approval->update([
+            'status' => 'approved',
+            'admin_id' => Auth::id()
+        ]);
+
+       \App\Models\AdminLog::create([
+            'log_id'        => $logOriginal->id,
+            'user_id'       => $approval->user_id,
+            'admin_id'      => Auth::id(),
+            'acao'          => 'APPROVED',
+            'dados_antigos' => $dadosAntigos,
+            'dados_novos'   => $dadosNovosParaGuardar
+        ]);
+
+        $solicitante = \App\Models\User::findOrFail($approval->user_id);
+        if ($solicitante) {
+            \Illuminate\Support\Facades\Mail::to($solicitante->email)
+                ->send(new \App\Mail\LogStatusUpdatedMail($solicitante, $logOriginal, 'approved', $dadosNovosParaGuardar));
+        }
+
+        return redirect()->route('adminlogs')->with('message', 'Aprovado com sucesso e utilizador notificado!');
     }
 
-    $approval = LogApproval::findOrFail($id);
-    $logOriginal = logs::findOrFail($approval->log_id);
+    public function rejectLog($id)
+    {
+        if (Auth::user()->tipo !== 'admin') {
+            return redirect()->route('userlogs')->with('error', 'Não tens permissão para rejeitar logs.');
+        }
 
-    $dadosAntigos = $logOriginal->getAttributes();
-    $dadosNovosParaGuardar = is_array($approval->dados_novos)
-        ? $approval->dados_novos
-        : json_decode($approval->dados_novos, true);
+        $approval = LogApproval::findOrFail($id);
 
-   $logOriginal->withoutEvents(function () use ($logOriginal, $dadosNovosParaGuardar, $approval) {
-        $logOriginal->update($dadosNovosParaGuardar);
-    });
- $approval->update([
-        'status' => 'approved', 
-        'admin_id' => Auth::id()
-    ]);
+        if ($approval->status !== 'pending') {
+            return redirect()->route('adminlogs')->with('error', 'Este pedido já foi processado anteriormente.');
+        }
 
-  
-    \App\Models\AdminLog::create([
-        'log_id'        => $logOriginal->id,
-        'user_id'       => $approval->user_id,
-        'admin_id'      => Auth::id(),
-        'acao'          => 'APPROVED',
-        'dados_antigos' => $dadosAntigos,
-        'dados_novos'   => $dadosNovosParaGuardar
-    ]);
+        if ($approval->created_at->copy()->addMinutes(60)->isPast()) {
+            $approval->update(['status' => 'rejected']);
+            return redirect()->route('adminlogs')->with('error', 'Link expirado! O pedido foi cancelado automaticamente.');
+        }
 
-     $solicitante = \App\Models\User::findorFail($approval->user_id);
-    if ($solicitante) {
-        \Illuminate\Support\Facades\Mail::to($solicitante->email)
-            ->send(new \App\Mail\LogStatusUpdatedMail($solicitante, $logOriginal, 'approved', $dadosNovosParaGuardar));
+        $logOriginal = logs::findOrFail($approval->log_id);
+
+        
+        $approval->update([
+            'status' => 'rejected',
+            'admin_id' => Auth::id()
+        ]);
+
+        \App\Models\AdminLog::create([
+            'log_id'        => $approval->log_id,
+            'user_id'       => $approval->user_id,
+            'admin_id'      => Auth::id(),
+            'acao'          => 'REJECTED',
+            'dados_antigos' => $logOriginal->getAttributes(),
+            'dados_novos'   => ['status' => 'rejected']
+        ]);
+
+        // 6. Notificar o utilizador por Email
+        $solicitante = \App\Models\User::findOrFail($approval->user_id);
+        if ($solicitante) {
+            \Illuminate\Support\Facades\Mail::to($solicitante->email)
+                ->send(new \App\Mail\LogStatusUpdatedMail($solicitante, $logOriginal, 'rejected', []));
+        }
+
+        return redirect()->route('adminlogs')->with('message', 'Pedido de alteração rejeitado e utilizador notificado.');
     }
-
-    return redirect()->route('adminlogs')->with('message', 'Aprovado com sucesso!');
-}
-
-public function rejectLog($id)
-{
-    if (Auth::user()->tipo !== 'admin') {
-        return redirect()->route('userlogs')->with('error', 'Não tens permissão para rejeitar logs.');
-    }
-
-    $approval = LogApproval::findOrFail($id);
-
-    if ($approval->status !== 'pending') {
-        return redirect()->route('adminlogs')->with('error', 'Este pedido já foi processado anteriormente.');
-    }
-
-    if ($approval->created_at->copy()->addMinutes(60)->isPast()) {
-        $approval->update(['status' => 'rejected']);
-        return redirect()->route('adminlogs')->with('error', 'Link expirado! O pedido foi cancelado.');
-    }
-
-    $logOriginal = logs::findOrFail($approval->log_id);
-
-    $approval->update([
-        'status' => 'rejected',
-        'admin_id' => Auth::id()
-    ]);
-
-    \App\Models\AdminLog::create([
-        'log_id'        => $approval->log_id,
-        'user_id'       => $approval->user_id,
-        'admin_id'      => Auth::id(),
-        'acao'          => 'REJECTED',
-        'dados_antigos' => $logOriginal->getAttributes(),
-        'dados_novos'   => ['status' => 'rejected']
-    ]);
-
-   $solicitante = \App\Models\User::findorFail($approval->user_id);
-    if ($solicitante) {
-        \Illuminate\Support\Facades\Mail::to($solicitante->email)
-            ->send(new \App\Mail\LogStatusUpdatedMail($solicitante, $logOriginal, 'rejected', []));
-    }
-
-    return redirect()->route('adminlogs')->with('message', 'Pedido de alteração rejeitado e utilizador notificado.');
-}
     public function receberPontoDoEsp32(Request $request)
     {
         try {
