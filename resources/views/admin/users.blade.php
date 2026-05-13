@@ -87,18 +87,20 @@
                                     <td class="px-6 py-4 text-gray-100">
                                         {{ $user->email }}
                                     </td>
-                                    <td>
-                                        @if (!$user->finger)
-                                            <form action="{{ route('users.enroll', $user->id) }}" method="POST">
-                                                @csrf
-                                                <button style="cursor:pointer" type="submit" class="text-red-400">
-                                                    Enroll Finger
-                                                </button>
-                                            </form>
-                                        @else
-                                            <span class="badge bg-success text-yellow-400">✔ Active</span>
-                                        @endif
-                                    </td>
+                                   <td class="px-6 py-4" id="finger-cell-{{ $user->id }}">
+    @if (!$user->finger)
+        
+        <button type="button" 
+                onclick="startEnroll({{ $user->id }})" 
+                id="btn-enroll-{{ $user->id }}"
+                style="cursor:pointer" 
+                class="text-red-400 font-medium">
+            Enroll Finger
+        </button>
+    @else
+        <span class="badge bg-success text-yellow-400">✔ Active</span>
+    @endif
+</td>
                                     <td class="px-6 py-4">
                                         <button
                                             class="{{ $user->tipo == 'admin' ? 'text-yellow-400' : 'text-gray-100' }}">
@@ -209,21 +211,18 @@
 
 </x-app-layout>
 
-
 <script>
-// FUNÇÃO PARA REMOVER
-function removeFinger(event, userId) {
-    event.preventDefault();
-    if (!confirm('Deseja mesmo remover esta biometria?')) return;
-
-    const btn = document.getElementById(`btn-remove-${userId}`);
+function startEnroll(userId) {
+    const btn = document.getElementById(`btn-enroll-${userId}`);
     const cell = document.getElementById(`finger-cell-${userId}`);
-    const container = document.getElementById(`remove-finger-container-${userId}`);
 
+    // Feedback visual para o admin saber que o comando foi enviado
     btn.disabled = true;
-    btn.innerText = "Removendo...";
+    btn.innerText = "Waiting for finger...";
+    btn.classList.add('animate-pulse', 'text-gray-400');
 
-    fetch(`/admin/users/delete-finger/${userId}`, {
+    // 1. Envia o pedido para o teu Controller (que dispara o MQTT)
+    fetch(`/admin/users/enroll/${userId}`, {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -232,52 +231,28 @@ function removeFinger(event, userId) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.status === 'success') {
-            // 1. Atualiza a tabela principal (lá atrás do modal)
-            cell.innerHTML = `
-                <button type="button" onclick="startEnroll(${userId})" id="btn-enroll-${userId}" class="text-red-400 hover:text-red-300 font-medium cursor-pointer">
-                    Enroll Finger
-                </button>
-            `;
-            // 2. Limpa o botão dentro do modal
-            container.innerHTML = ''; 
-        } else {
-            alert("Erro: " + data.message);
-            btn.disabled = false;
-            btn.innerText = "Remove Fingerprint";
+        if (data.status === 'error') {
+            alert(data.message);
+            location.reload(); // Se der erro no MQTT, faz refresh para resetar o botão
+            return;
         }
-    });
-}
 
-// FUNÇÃO PARA ENROLL (POLLING)
-function startEnroll(userId) {
-    const btn = document.getElementById(`btn-enroll-${userId}`);
-    const cell = document.getElementById(`finger-cell-${userId}`);
-
-    btn.disabled = true;
-    btn.innerText = "Aguardando dedo...";
-    btn.classList.add('animate-pulse', 'text-gray-400');
-
-    fetch(`/admin/users/enroll/${userId}`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(() => {
+        // 2. O comando foi enviado com sucesso! 
+        // Agora o JS pergunta à DB de 2 em 2 segundos se o 'finger' já é 1
         const checkInterval = setInterval(() => {
             fetch(`/admin/users/${userId}/finger-status`)
                 .then(res => res.json())
-                .then(data => {
-                    if (data.has_finger) {
+                .then(statusData => {
+                    if (statusData.has_finger) {
+                        // SUCESSO! O ESP32 já respondeu e a DB atualizou.
                         clearInterval(checkInterval);
                         cell.innerHTML = '<span class="badge bg-success text-yellow-400">✔ Active</span>';
-                        // Opcional: Recarregar para atualizar os botões dentro dos modais
-                        // window.location.reload(); 
                     }
                 });
-        }, 2000);
+        }, 2000); // Polling a cada 2 segundos
+    })
+    .catch(error => {
+        console.error('Erro:', error);
     });
 }
 </script>
