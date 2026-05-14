@@ -70,8 +70,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/approve-log/{id}', [App\Http\Controllers\logscontroller::class, 'approveLog'])->name('admin.approve_log');
         Route::get('/reject-log/{id}', [App\Http\Controllers\logscontroller::class, 'rejectLog'])->name('admin.reject_log');
 
-        Route::get('/admin/users/{id}/finger-status', [usercontroller::class, 'checkFingerStatus'])->name('users.finger_status');
-
+        Route::get('/users/{id}/finger-status', [usercontroller::class, 'checkFingerStatus'])->name('users.finger_status');
     });
 
     // Biometria (Enroll)

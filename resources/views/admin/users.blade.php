@@ -208,6 +208,7 @@
 
 
 </x-app-layout>
+
 <script>
 function startEnroll(userId) {
     const btn = document.getElementById(`btn-enroll-${userId}`);
@@ -215,12 +216,10 @@ function startEnroll(userId) {
 
     if(!btn) return;
 
-    // Feedback visual imediato
     btn.disabled = true;
     btn.innerText = "A aguardar sensor...";
     btn.classList.add('animate-pulse');
 
-    // Passo 1: Enviar o comando MQTT (chama o controller)
     fetch(`/users/${userId}/enroll`, {
         method: 'POST',
         headers: {
@@ -229,39 +228,30 @@ function startEnroll(userId) {
             'Accept': 'application/json'
         }
     })
-    .then(response => {
-        if (!response.ok) throw new Error('Erro de rede');
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            // Passo 2: O MQTT foi enviado. Agora ficamos à espera que a DB atualize (polling)
-            const checkInterval = setInterval(() => {
-                fetch(`/admin/users/${userId}/finger-status`)
-                    .then(res => res.json())
-                    .then(statusData => {
-                        // Se o ESP32 já enviou o status 1 para a Base de dados
-                        if (statusData.finger == 1 || statusData.finger == true) {
-                            clearInterval(checkInterval); // Para de procurar
-                            // Atualiza a tabela na hora sem F5
-                            cell.innerHTML = '<span class="badge bg-success text-yellow-400">✔ Active</span>';
-                        }
-                    })
-                    .catch(err => console.error("Erro ao verificar estado:", err));
-            }, 2000); // Tenta a cada 2 segundos
-        } else {
-            alert('Erro MQTT: ' + data.error);
-            btn.innerText = "Enroll Finger";
-            btn.disabled = false;
-            btn.classList.remove('animate-pulse');
-        }
+        console.log("MQTT Enviado. A iniciar verificação na DB...");
+
+        const checkInterval = setInterval(() => {
+            // Chamada para a rota que corrigimos no passo 1
+            fetch(`/admin/users/${userId}/finger-status`)
+                .then(res => res.json())
+                .then(statusData => {
+                    console.log("Estado atual do dedo:", statusData.finger);
+                    
+                    if (statusData.finger == 1) {
+                        console.log("Sucesso! Dedo detetado.");
+                        clearInterval(checkInterval);
+                        cell.innerHTML = '<span class="badge bg-success text-yellow-400">✔ Active</span>';
+                    }
+                })
+                .catch(err => console.error("Erro ao consultar status:", err));
+        }, 2000);
     })
     .catch(error => {
-        console.error('Erro na requisição:', error);
-        alert("Falha de comunicação.");
-        btn.innerText = "Enroll Finger";
+        console.error('Erro:', error);
         btn.disabled = false;
-        btn.classList.remove('animate-pulse');
+        btn.innerText = "Enroll Finger";
     });
 }
 </script>
