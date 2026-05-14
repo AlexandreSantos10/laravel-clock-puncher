@@ -87,20 +87,17 @@
                                     <td class="px-6 py-4 text-gray-100">
                                         {{ $user->email }}
                                     </td>
-                                   <td class="px-6 py-4" id="finger-cell-{{ $user->id }}">
-    @if (!$user->finger)
-        
-        <button type="button" 
-                onclick="startEnroll({{ $user->id }})" 
-                id="btn-enroll-{{ $user->id }}"
-                style="cursor:pointer" 
-                class="text-red-400 font-medium">
-            Enroll Finger
-        </button>
-    @else
-        <span class="badge bg-success text-yellow-400">✔ Active</span>
-    @endif
-</td>
+                                    <td class="px-6 py-4" id="finger-cell-{{ $user->id }}">
+                                        @if (!$user->finger)
+                                            <button style="cursor:pointer" type="button"
+                                                id="btn-enroll-{{ $user->id }}"
+                                                onclick="startEnroll({{ $user->id }})" class="text-red-400">
+                                                Enroll Finger
+                                            </button>
+                                        @else
+                                            <span class="badge bg-success text-yellow-400">✔ Active</span>
+                                        @endif
+                                    </td>
                                     <td class="px-6 py-4">
                                         <button
                                             class="{{ $user->tipo == 'admin' ? 'text-yellow-400' : 'text-gray-100' }}">
@@ -156,18 +153,18 @@
                                                     <div
                                                         class="bg-gray-700/25 px-4 py-3 flex flex-wrap items-center {{ $user->finger ? 'justify-between' : 'justify-center' }} sm:px-6">
 
-                                                        <div id="remove-finger-container-{{ $user->id }}">
-                                                            @if ($user->finger)
+                                                        @if ($user->finger)
+                                                            <div>
                                                                 <form
-                                                                    onsubmit="removeFinger(event, {{ $user->id }})">
+                                                                    action="{{ route('users.delete_finger', $user->id) }}"
+                                                                    method="POST">
                                                                     @csrf
-                                                                    <x-primary-red-button type="submit"
-                                                                        id="btn-remove-{{ $user->id }}">
+                                                                    <x-primary-red-button>
                                                                         Remove Fingerprint
                                                                     </x-primary-red-button>
                                                                 </form>
-                                                            @endif
-                                                        </div>
+                                                            </div>
+                                                        @endif
 
                                                         <div class="flex items-center mt-3 sm:mt-0">
                                                             <button type="button" style="cursor: pointer"
@@ -184,6 +181,7 @@
                                                                     Role</x-primary-app-button>
                                                             </form>
                                                         </div>
+
                                                     </div>
                                                 </el-dialog-panel>
                                             </div>
@@ -210,49 +208,60 @@
 
 
 </x-app-layout>
-
 <script>
 function startEnroll(userId) {
     const btn = document.getElementById(`btn-enroll-${userId}`);
     const cell = document.getElementById(`finger-cell-${userId}`);
 
-    // Feedback visual para o admin saber que o comando foi enviado
-    btn.disabled = true;
-    btn.innerText = "Waiting for finger...";
-    btn.classList.add('animate-pulse', 'text-gray-400');
+    if(!btn) return;
 
-    // 1. Envia o pedido para o teu Controller (que dispara o MQTT)
-    fetch(`/admin/users/enroll/${userId}`, {
+    // Feedback visual imediato
+    btn.disabled = true;
+    btn.innerText = "A aguardar sensor...";
+    btn.classList.add('animate-pulse');
+
+    // Passo 1: Enviar o comando MQTT (chama o controller)
+    fetch(`/users/${userId}/enroll`, {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) throw new Error('Erro de rede');
+        return response.json();
+    })
     .then(data => {
-        if (data.status === 'error') {
-            alert(data.message);
-            location.reload(); // Se der erro no MQTT, faz refresh para resetar o botão
-            return;
+        if (data.success) {
+            // Passo 2: O MQTT foi enviado. Agora ficamos à espera que a DB atualize (polling)
+            const checkInterval = setInterval(() => {
+                fetch(`/admin/users/${userId}/finger-status`)
+                    .then(res => res.json())
+                    .then(statusData => {
+                        // Se o ESP32 já enviou o status 1 para a Base de dados
+                        if (statusData.finger == 1 || statusData.finger == true) {
+                            clearInterval(checkInterval); // Para de procurar
+                            // Atualiza a tabela na hora sem F5
+                            cell.innerHTML = '<span class="badge bg-success text-yellow-400">✔ Active</span>';
+                        }
+                    })
+                    .catch(err => console.error("Erro ao verificar estado:", err));
+            }, 2000); // Tenta a cada 2 segundos
+        } else {
+            alert('Erro MQTT: ' + data.error);
+            btn.innerText = "Enroll Finger";
+            btn.disabled = false;
+            btn.classList.remove('animate-pulse');
         }
-
-        // 2. O comando foi enviado com sucesso! 
-        // Agora o JS pergunta à DB de 2 em 2 segundos se o 'finger' já é 1
-        const checkInterval = setInterval(() => {
-            fetch(`/admin/users/${userId}/finger-status`)
-                .then(res => res.json())
-                .then(statusData => {
-                    if (statusData.has_finger) {
-                        // SUCESSO! O ESP32 já respondeu e a DB atualizou.
-                        clearInterval(checkInterval);
-                        cell.innerHTML = '<span class="badge bg-success text-yellow-400">✔ Active</span>';
-                    }
-                });
-        }, 2000); // Polling a cada 2 segundos
     })
     .catch(error => {
-        console.error('Erro:', error);
+        console.error('Erro na requisição:', error);
+        alert("Falha de comunicação.");
+        btn.innerText = "Enroll Finger";
+        btn.disabled = false;
+        btn.classList.remove('animate-pulse');
     });
 }
 </script>

@@ -118,68 +118,48 @@ class usercontroller extends Controller
         return redirect()->back();
     }
 
-    public function enroll($id, Request $request)
-{
-    // 1. Procurar o utilizador
-    $user = User::findOrFail($id);
+    public function enroll(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
 
-    try {
-        // 2. Configurações de conexão MQTT (TLS Ativo conforme o teu código)
-        $settings = (new \PhpMqtt\Client\ConnectionSettings)
-            ->setUseTls(true)
-            ->setTlsVerifyPeer(false)
-            ->setUsername(config('mqtt.username'))
-            ->setPassword(config('mqtt.password'));
+        try {
+            $settings = (new \PhpMqtt\Client\ConnectionSettings)
+                ->setUseTls(true)
+                ->setTlsVerifyPeer(false)
+                ->setUsername(config('mqtt.username'))
+                ->setPassword(config('mqtt.password'));
 
-        // 3. Instanciar o Cliente MQTT
-        $mqtt = new \PhpMqtt\Client\MqttClient(
-            config('mqtt.host'), 
-            (int) config('mqtt.port'), 
-            'enroll_web_client_' . $id
-        );
+            $mqtt = new \PhpMqtt\Client\MqttClient(config('mqtt.host'), (int) config('mqtt.port'), 'enroll_web_client_' . $id);
+            $mqtt->connect($settings, true);
 
-        $mqtt->connect($settings, true);
+            $mqtt->publish('Enroll/UserID', (string)$id, 0, false);
+            $mqtt->publish('Enroll/Nome', $user->name, 0, false);
+            $mqtt->disconnect();
 
-        // 4. Publicar os tópicos para o ESP32
-        // Enviamos o ID para o sensor saber quem registar e o Nome para feedback no LCD
-        $mqtt->publish('Enroll/UserID', (string)$id, 0, false);
-        $mqtt->publish('Enroll/Nome', $user->name, 0, false);
-        
-        $mqtt->disconnect();
+            // Se for um pedido AJAX (JavaScript), devolve JSON para não refrescar a página
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => true]);
+            }
 
-        // 5. RESPOSTA INTELIGENTE
-        // Se o pedido vier do AJAX (JavaScript), respondemos JSON
-        if ($request->ajax()) {
-            return response()->json([
-                'status' => 'success',
-                'message' => "Comando enviado! O sensor está à espera do dedo de {$user->name}."
-            ]);
+            // Fallback caso a página seja acedida normalmente
+            return back()->with('success', "Comando enviado para o sensor! Peça ao funcionário {$user->name} para colocar o dedo na máquina.");
+
+        } catch (\Exception $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+            }
+            return back()->with('error', 'Erro ao comunicar com o Broker: ' . $e->getMessage());
         }
-
-        // Se for um clique normal de botão (sem AJAX), faz o redirect antigo
-        return back()->with('success', "Comando enviado para o sensor! Peça ao funcionário {$user->name} para colocar o dedo na máquina.");
-
-    } catch (\Exception $e) {
-        // Log do erro para debug se necessário
-       
-        if ($request->ajax()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Erro ao comunicar com o Broker: ' . $e->getMessage()
-            ], 500);
-        }
-
-        return back()->with('error', 'Erro ao comunicar com o Broker: ' . $e->getMessage());
     }
-}
-public function checkFingerStatus($id)
-{
-    $user = \App\Models\User::findOrFail($id);
 
-    return response()->json([
-        'has_finger' => (bool) $user->finger 
-    ]);
-}
+    // ADICIONAR ESTA FUNÇÃO NOVA PARA O JAVASCRIPT CONSEGUIR LER O ESTADO
+    public function checkFingerStatus($id)
+    {
+        $user = User::findOrFail($id);
+        return response()->json([
+            'finger' => $user->finger
+        ]);
+    }
 
     public function receberStatusEnroll(Request $request)
     {
@@ -208,50 +188,31 @@ public function checkFingerStatus($id)
         }
     }
     
-    public function deleteFinger($id, Request $request) // Adicionado o Request
-{
-    $user = \App\Models\User::findOrFail($id);
+    public function deleteFinger($id)
+    {
+        $user = \App\Models\User::findOrFail($id);
 
-    try {
-        // 1. Configurações MQTT
-        $settings = (new \PhpMqtt\Client\ConnectionSettings)
-            ->setUseTls(true)
-            ->setTlsVerifyPeer(false)
-            ->setUsername(config('mqtt.username'))
-            ->setPassword(config('mqtt.password'));
+        try {
+            
+            $settings = (new \PhpMqtt\Client\ConnectionSettings)
+                ->setUseTls(true)
+                ->setTlsVerifyPeer(false)
+                ->setUsername(config('mqtt.username'))
+                ->setPassword(config('mqtt.password'));
 
-        $mqtt = new \PhpMqtt\Client\MqttClient(config('mqtt.host'), (int) config('mqtt.port'), 'delete_web_client_' . $id);
-        $mqtt->connect($settings, true);
+            $mqtt = new \PhpMqtt\Client\MqttClient(config('mqtt.host'), (int) config('mqtt.port'), 'delete_web_client_' . $id);
+            $mqtt->connect($settings, true);
 
-        // 2. Enviar comando de exclusão para o ESP32
-        $mqtt->publish('Delete/UserID', (string)$id, 0, false);
-        $mqtt->disconnect();
+            
+            $mqtt->publish('Delete/UserID', (string)$id, 0, false);
+            $mqtt->disconnect();
 
-        // 3. IMPORTANTE: Atualizar a base de dados imediatamente
-        // Assim o Polling/Interface sabe que o dedo já não existe
-        $user->update(['finger' => 0]);
+            return back()->with('success', "Comando enviado! O sensor vai apagar a biometria de {$user->name}.");
 
-        // 4. Resposta condicional (AJAX vs Normal)
-        if ($request->ajax()) {
-            return response()->json([
-                'status' => 'success',
-                'message' => "Comando enviado! A biometria de {$user->name} foi removida."
-            ]);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Erro ao comunicar com o Broker MQTT: ' . $e->getMessage());
         }
-
-        return back()->with('success', "Comando enviado! O sensor vai apagar a biometria de {$user->name}.");
-
-    } catch (\Exception $e) {
-        if ($request->ajax()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Erro ao comunicar com o Broker MQTT: ' . $e->getMessage()
-            ], 500);
-        }
-        
-        return back()->with('error', 'Erro ao comunicar com o Broker MQTT: ' . $e->getMessage());
     }
-}
 
 
     
