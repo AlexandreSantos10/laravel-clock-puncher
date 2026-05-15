@@ -2,13 +2,20 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\usercontroller;
 use App\Http\Controllers\logscontroller;
 
 
 Route::get('/', function () {
-    return view('welcome');
+    if (Auth::check()) {
+        return redirect()->route('home');
+    }
+    return redirect()->route('login');
 });
+Route::get('/welcome', function () {
+    return view('welcome');
+})->name('welcome');
 
 Route::post('/esp32/ponto', [logscontroller::class, 'receberPontoDoEsp32']);
 Route::post('/esp32/enroll-status', [usercontroller::class, 'receberStatusEnroll']);

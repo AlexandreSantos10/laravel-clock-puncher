@@ -11,15 +11,15 @@
                 <div class="grid gap-6 mb-6 md:grid-cols-2">
                     <div>
                         <label for="name"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Name</label>
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-900">Name</label>
                         <x-text-input type="text" id="name" name="name"
-                           placeholder="John Doe" required />
+                           placeholder="Name" required />
                     </div>
                     <div>
                         <label for="email"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
                         <x-text-input type="text" id="email" name="email"
-                             placeholder="John@gmail.com" required />
+                             placeholder="Email" required />
                     </div>
                     <div>
                         <label for="password"
